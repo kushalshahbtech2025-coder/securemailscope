@@ -50,7 +50,7 @@ export const soundManager = {
     }
   },
 
-  // High-tech chord when a block is mined or scan is completed
+  // High-tech chord when a block is mined or scan is passed
   playSuccess() {
     const ctx = getContext();
     if (!ctx) return;
@@ -68,6 +68,41 @@ export const soundManager = {
         osc.start(ctx.currentTime + idx * 0.06);
         osc.stop(ctx.currentTime + idx * 0.06 + 0.3);
       });
+    } catch {}
+  },
+
+  // Cyber threat alert klaxon / anomaly danger alarm
+  playThreatWarning() {
+    const ctx = getContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      // Two-pulse tactical danger siren: 880Hz down to 440Hz, then 880Hz down to 330Hz
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1400, now);
+
+      // Alert Tone 1
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(440, now + 0.16);
+      gain.gain.setValueAtTime(0.09, now);
+      gain.gain.exponentialRampToValueAtTime(0.005, now + 0.16);
+
+      // Alert Tone 2 (Lower urgent pulse)
+      osc.frequency.setValueAtTime(880, now + 0.20);
+      osc.frequency.exponentialRampToValueAtTime(320, now + 0.40);
+      gain.gain.setValueAtTime(0.09, now + 0.20);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.44);
     } catch {}
   },
 
@@ -90,3 +125,4 @@ export const soundManager = {
     } catch {}
   }
 };
+

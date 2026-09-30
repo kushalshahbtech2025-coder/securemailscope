@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { getScoreColor, getStatusDot, getStatusIcon, getSeverityClass, generateTxHash } from '../data/mockData.js';
 import { scanDomain } from '../data/api.js';
+import { soundManager } from '../data/sound.js';
 
 const SCAN_STEPS = [
   { id: 'dns',    label: 'Resolving DNS records…' },
@@ -16,6 +18,7 @@ const SCAN_STEPS = [
 ];
 
 export default function Scanner() {
+  const navigate = useNavigate();
   const [domain, setDomain]     = useState('');
   const [scanning, setScanning] = useState(false);
   const [stepIdx, setStepIdx]   = useState(-1);
@@ -27,6 +30,7 @@ export default function Scanner() {
     const d = domain.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
     if (!d || !d.includes('.')) { toast.error('Enter a valid domain (e.g. google.com)'); return; }
 
+    soundManager.playScanPulse();
     setResult(null);
     setScanning(true);
     setStepIdx(0);
@@ -46,7 +50,18 @@ export default function Scanner() {
     setResult(data);
     setScanning(false);
     setStepIdx(-1);
-    toast.success(isLive ? '✅ Live scan complete · Logged on-chain' : '⚡ Demo scan complete');
+
+    const hasDanger = data.score < 60 || data.checks?.some(c => c.status === 'fail');
+    if (hasDanger) {
+      soundManager.playThreatWarning();
+      toast.error(`🚨 DANGER: Critical security anomalies detected on ${d}!`, {
+        duration: 5000,
+        style: { background: '#2B0510', border: '1px solid #FF0055', color: '#FFF' }
+      });
+    } else {
+      soundManager.playSuccess();
+      toast.success(isLive ? '✅ Live scan complete · Logged on-chain' : '⚡ Demo scan complete');
+    }
   }
 
   return (
@@ -138,6 +153,58 @@ export default function Scanner() {
       {/* Results */}
       {result && !scanning && (
         <div className="animate-fade">
+          {/* DANGER / THREAT ANOMALY ALERT BANNER */}
+          {(result.score < 60 || result.checks?.some(c => c.status === 'fail')) && (
+            <div style={{
+              marginBottom: '1.25rem', padding: '1.1rem 1.4rem',
+              background: 'linear-gradient(135deg, rgba(255, 0, 85, 0.18) 0%, rgba(255, 183, 3, 0.12) 100%)',
+              border: '1px solid #FF0055', borderRadius: '12px',
+              boxShadow: '0 0 30px rgba(255, 0, 85, 0.3), inset 0 0 15px rgba(255, 0, 85, 0.12)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem',
+              animation: 'pulse 2.2s infinite'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{
+                  width: 46, height: 46, borderRadius: '50%', background: 'rgba(255, 0, 85, 0.25)',
+                  border: '2px solid #FF0055', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.5rem', boxShadow: '0 0 15px #FF0055'
+                }}>
+                  🚨
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <span style={{ color: '#FF0055', fontWeight: 900, fontSize: '0.98rem', letterSpacing: '0.06em' }}>
+                      CRITICAL ANOMALY & THREAT DETECTED
+                    </span>
+                    <span className="tag tag-red" style={{ background: '#FF0055', color: '#FFF', fontWeight: 900, fontSize: '0.7rem' }}>
+                      DANGER
+                    </span>
+                  </div>
+                  <p style={{ color: 'var(--text-primary)', fontSize: '0.84rem', margin: '0.2rem 0 0', maxWidth: '650px' }}>
+                    Severe posture vulnerabilities detected on <strong style={{ color: '#FF0055' }}>{result.domain}</strong>. Missing or misconfigured SPF/DKIM/DMARC policies expose your domain to active spoofing, wire fraud, and adversary impersonation.
+                  </p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.6rem' }}>
+                <button
+                  onClick={() => soundManager.playThreatWarning()}
+                  className="btn btn-outline"
+                  style={{ borderColor: '#FF0055', color: '#FF0055', fontSize: '0.8rem', padding: '0.4rem 0.85rem' }}
+                  title="Replay Siren Alarm"
+                >
+                  🔊 Replay Alarm
+                </button>
+                <button
+                  onClick={() => navigate('/dashboard/brainstorm')}
+                  className="btn btn-primary"
+                  style={{ background: '#FF0055', color: '#FFF', border: 'none', fontSize: '0.8rem', padding: '0.4rem 0.95rem', fontWeight: 700 }}
+                >
+                  🧠 Brainstorm Fixes ↗
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Score Banner */}
           <div className="card" style={{ marginBottom: '1.25rem' }}>
             <div className="card-body" style={{

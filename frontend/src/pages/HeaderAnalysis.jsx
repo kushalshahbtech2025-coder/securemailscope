@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { analyzeHeader } from '../data/api.js';
+import { soundManager } from '../data/sound.js';
 
 const SAMPLE_HEADER = `Delivered-To: user@example.com
 Received: from mail.google.com (mail.google.com [209.85.128.44])
@@ -64,23 +65,24 @@ export default function HeaderAnalysis() {
 
   async function analyze() {
     if (!raw.trim()) { toast.error('Paste an email header first'); return; }
+    soundManager.playScanPulse();
     setAnalyzing(true);
     try {
       const { data, live } = await analyzeHeader(raw);
+      let analyzedResult;
       if (live && data) {
         const mappedFields = Object.entries(data.fields || {}).map(([key, val]) => ({ key, val }));
-        setResult({
+        analyzedResult = {
           fields: mappedFields,
           authResults: data.auth_results || { spf: 'unknown', dkim: 'unknown', dmarc: 'unknown' },
           hops: data.hops || [],
           suspicious: data.suspicious,
           ai_forensics: data.ai_forensics,
           isLive: true,
-        });
-        toast.success('Live forensic analysis complete');
+        };
       } else {
         const local = parseHeader(raw);
-        setResult({
+        analyzedResult = {
           ...local,
           ai_forensics: {
             content: local.suspicious
@@ -88,17 +90,34 @@ export default function HeaderAnalysis() {
               : 'Forensic Check: Cryptographic authentication records verified. Header indicates expected delivery hops with valid sender credentials.',
             source: 'rule_engine'
           }
+        };
+      }
+
+      setResult(analyzedResult);
+      if (analyzedResult.suspicious) {
+        soundManager.playThreatWarning();
+        toast.error('🚨 DANGER: Header Anomaly & Spoofing Threat Detected!', {
+          duration: 5000,
+          style: { background: '#2B0510', border: '1px solid #FF0055', color: '#FFF' }
         });
-        toast.success('Header analyzed');
+      } else {
+        soundManager.playSuccess();
+        toast.success(analyzedResult.isLive ? 'Live forensic analysis complete' : 'Header forensic check complete');
       }
     } catch {
       const local = parseHeader(raw);
       setResult(local);
+      if (local.suspicious) {
+        soundManager.playThreatWarning();
+      } else {
+        soundManager.playSuccess();
+      }
       toast.success('Header analyzed');
     } finally {
       setAnalyzing(false);
     }
   }
+
 
   function loadSample() {
     setRaw(SAMPLE_HEADER);
@@ -155,6 +174,48 @@ export default function HeaderAnalysis() {
         {/* Results */}
         {result && (
           <div style={{ display:'flex', flexDirection:'column', gap:'1.25rem' }}>
+            {/* DANGER / ANOMALY ALERT BANNER */}
+            {result.suspicious && (
+              <div style={{
+                padding: '1.1rem 1.4rem',
+                background: 'linear-gradient(135deg, rgba(255, 0, 85, 0.2) 0%, rgba(255, 183, 3, 0.12) 100%)',
+                border: '1px solid #FF0055', borderRadius: '12px',
+                boxShadow: '0 0 28px rgba(255, 0, 85, 0.3), inset 0 0 14px rgba(255, 0, 85, 0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem',
+                animation: 'pulse 2.2s infinite'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: '50%', background: 'rgba(255, 0, 85, 0.25)',
+                    border: '2px solid #FF0055', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '1.4rem', boxShadow: '0 0 12px #FF0055'
+                  }}>
+                    🚨
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <span style={{ color: '#FF0055', fontWeight: 900, fontSize: '0.96rem', letterSpacing: '0.05em' }}>
+                        DANGER: CRITICAL HEADER ANOMALY DETECTED
+                      </span>
+                      <span className="tag tag-red" style={{ background: '#FF0055', color: '#FFF', fontWeight: 900, fontSize: '0.68rem' }}>
+                        HIGH RISK
+                      </span>
+                    </div>
+                    <p style={{ color: 'var(--text-primary)', fontSize: '0.82rem', margin: '0.2rem 0 0' }}>
+                      Failed SPF or DKIM cryptographic verification. This message exhibits strong indicators of unauthorized relaying, domain spoofing, or credential harvesting.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => soundManager.playThreatWarning()}
+                  className="btn btn-outline"
+                  style={{ borderColor: '#FF0055', color: '#FF0055', fontSize: '0.78rem', padding: '0.35rem 0.8rem' }}
+                >
+                  🔊 Replay Alarm
+                </button>
+              </div>
+            )}
+
             {/* Auth Summary */}
             <div className="card animate-scale">
               <div className="card-header">
