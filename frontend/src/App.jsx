@@ -57,13 +57,13 @@ function Sidebar({ collapsed, setCollapsed }) {
               d="M14 2L3 7.5V14C3 19.55 7.84 24.74 14 26C20.16 24.74 25 19.55 25 14V7.5L14 2Z"
               stroke="url(#sbg)"
               strokeWidth="1.8"
-              fill="rgba(109,40,217,0.12)"
+              fill="rgba(0, 245, 255, 0.12)"
             />
-            <path d="M9 14l3 3 7-7" stroke="#34D399" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M9 14l3 3 7-7" stroke="#00FFA3" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
             <defs>
               <linearGradient id="sbg" x1="3" y1="2" x2="25" y2="26">
-                <stop stopColor="#8B5CF6"/>
-                <stop offset="1" stopColor="#06B6D4"/>
+                <stop stopColor="#00F5FF"/>
+                <stop offset="1" stopColor="#00FFA3"/>
               </linearGradient>
             </defs>
           </svg>

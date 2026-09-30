@@ -257,10 +257,10 @@ export default function Scanner() {
             {result.tx_hash && (
               <div style={{
                 padding: '0.75rem 1.5rem',
-                background: 'rgba(124,58,237,0.06)',
+                background: 'rgba(251,191,36,0.06)',
                 borderTop: '1px solid var(--border)',
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
-                fontSize: '0.8rem', color: '#A78BFA', flexWrap: 'wrap'
+                fontSize: '0.8rem', color: '#FBBF24', flexWrap: 'wrap'
               }}>
                 <span>⛓</span>
                 <span>Recorded on Ethereum Sepolia Testnet</span>
@@ -396,7 +396,7 @@ export default function Scanner() {
                 {[
                   { label: 'SPF (TXT)', val: `v=spf1 include:_spf.${result.domain} -all`, color: 'var(--accent-cyan)' },
                   { label: 'DMARC (TXT)', val: `v=DMARC1; p=reject; pct=100; rua=mailto:dmarc@${result.domain}`, color: 'var(--accent-green)' },
-                  { label: 'TLS Policy', val: `SMTP require TLS 1.3\nSTARTTLS enforced\nHSTS: max-age=31536000`, color: '#A78BFA' },
+                  { label: 'TLS Policy', val: `SMTP require TLS 1.3\nSTARTTLS enforced\nHSTS: max-age=31536000`, color: 'var(--accent-gold)' },
                 ].map(item => (
                   <div key={item.label} style={{
                     background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border)',

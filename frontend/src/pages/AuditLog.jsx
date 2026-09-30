@@ -147,8 +147,9 @@ export default function AuditLog({ apiOnline }) {
             style={{
               fontSize: '0.82rem', padding: '0.45rem 1rem',
               display: 'flex', alignItems: 'center', gap: '0.5rem',
-              background: 'linear-gradient(135deg, #8B5CF6 0%, #06B6D4 100%)',
-              border: 'none', boxShadow: '0 0 16px rgba(139,92,246,0.3)'
+              background: 'linear-gradient(135deg, #00FFA3 0%, #00F5FF 100%)',
+              color: '#030712', fontWeight: 800,
+              border: 'none', boxShadow: '0 0 16px rgba(0, 245, 255, 0.3)'
             }}
           >
             {isMining ? '⛏️ Mining Block…' : '⛏️ Mine New Audit Block'}
@@ -171,14 +172,14 @@ export default function AuditLog({ apiOnline }) {
                 soundManager.playClick();
               }}
               style={{
-                background: isCurrent ? 'rgba(139,92,246,0.18)' : 'rgba(255,255,255,0.03)',
-                border: isCurrent ? '1px solid var(--accent-purple)' : '1px solid var(--border)',
+                background: isCurrent ? 'rgba(0, 245, 255, 0.12)' : 'rgba(255,255,255,0.03)',
+                border: isCurrent ? '1px solid var(--accent-cyan)' : '1px solid var(--border)',
                 borderRadius: '10px',
                 padding: '0.55rem 0.95rem',
                 display: 'flex', alignItems: 'center', gap: '0.6rem',
                 cursor: 'pointer',
                 transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                boxShadow: isCurrent ? '0 0 14px rgba(139,92,246,0.2)' : 'none'
+                boxShadow: isCurrent ? '0 0 14px rgba(0, 245, 255, 0.25)' : 'none'
               }}
             >
               <span style={{ fontSize: '1.1rem' }}>{net.icon}</span>
@@ -199,7 +200,7 @@ export default function AuditLog({ apiOnline }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
         {[
           { label: 'Total Verified Audits', value: logs.length, color: 'var(--accent-cyan)', icon: '⛓', sub: `${activeNetwork.name}` },
-          { label: 'Latest Block Height', value: `#${logs[0]?.block || 4833}`, color: '#A78BFA', icon: '◈', sub: 'PoS Finalized' },
+          { label: 'Latest Block Height', value: `#${logs[0]?.block || 4833}`, color: 'var(--accent-gold)', icon: '◈', sub: 'PoS Finalized' },
           { label: 'Active Smart Contract', value: activeNetwork.contract, color: 'var(--accent-green)', icon: '📜', sub: 'Verified ABI' },
           { label: 'Average Gas Used', value: '22,410 gas', color: 'var(--accent-amber)', icon: '⚡', sub: '~0.00042 ETH ($1.42)' },
         ].map((s, i) => (
@@ -551,7 +552,7 @@ export default function AuditLog({ apiOnline }) {
                     { label: 'Smart Contract', val: activeNetwork.contract, mono: true, copy: activeNetwork.contract },
                     { label: 'Gas Consumption', val: `${selectedTx.gasUsed || 21840} gas (${selectedTx.gasFeeEth || '0.000412 ETH'})` },
                     { label: 'Merkle Root Hash', val: selectedTx.merkleRoot || '0x7e812d4a9b64c01287f39d2c1840aef53182dcba7921e0', mono: true, copy: selectedTx.merkleRoot },
-                    { label: 'Decentralized Storage (IPFS CID)', val: selectedTx.ipfsCid || 'bafybeih4j7qm5k26d7m2wqu7l8n0px2q8a1z4v7b9', mono: true, copy: selectedTx.ipfsCid, color: 'var(--accent-purple)' },
+                    { label: 'Decentralized Storage (IPFS CID)', val: selectedTx.ipfsCid || 'bafybeih4j7qm5k26d7m2wqu7l8n0px2q8a1z4v7b9', mono: true, copy: selectedTx.ipfsCid, color: 'var(--accent-gold)' },
                   ].map((row, idx) => (
                     <div
                       key={idx}
@@ -608,7 +609,7 @@ export default function AuditLog({ apiOnline }) {
                     <div style={{ color: 'var(--accent-cyan)', paddingLeft: '2rem' }}>
                       ↳ Merkle Branch: 0x8a91…c820
                     </div>
-                    <div style={{ color: 'var(--accent-purple)', paddingLeft: '3rem', fontWeight: 600 }}>
+                    <div style={{ color: 'var(--accent-gold)', paddingLeft: '3rem', fontWeight: 600 }}>
                       ↳ State Root: {selectedTx.merkleRoot?.slice(0, 24) || '0x7e812d4a9b64c01287f39d2c'}… ✓ VERIFIED
                     </div>
                   </div>
@@ -645,7 +646,7 @@ export default function AuditLog({ apiOnline }) {
       <div className="card" style={{ marginTop: '1.25rem' }}>
         <div className="card-header">
           <span className="card-title">Deployed Smart Contract — AuditLog.sol</span>
-          <span className="tag tag-purple">{activeNetwork.name}</span>
+          <span className="tag tag-cyan">{activeNetwork.name}</span>
         </div>
         <div className="card-body">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
@@ -680,7 +681,7 @@ export default function AuditLog({ apiOnline }) {
             }}>
               <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>// SPDX-License-Identifier: MIT</div>
               <div>
-                <span style={{ color: '#8B5CF6' }}>event</span>
+                <span style={{ color: 'var(--accent-cyan)' }}>event</span>
                 <span style={{ color: 'var(--text-primary)' }}> AuditRecorded(</span>
               </div>
               <div style={{ paddingLeft: '1rem', color: 'var(--text-secondary)' }}>
@@ -694,7 +695,7 @@ export default function AuditLog({ apiOnline }) {
                 <span style={{ color: 'var(--text-secondary)' }}>string calldata domain, uint8 score, bytes32 root</span>
                 <span style={{ color: '#E8F4FD' }}>)</span>
                 <span style={{ color: 'var(--accent-cyan)' }}> external </span>
-                <span style={{ color: '#8B5CF6' }}>returns</span>
+                <span style={{ color: 'var(--accent-green)' }}>returns</span>
                 <span style={{ color: '#E8F4FD' }}> (bytes32 txHash) {'{'}</span>
               </div>
               <div style={{ paddingLeft: '1rem', color: 'var(--accent-green)' }}>

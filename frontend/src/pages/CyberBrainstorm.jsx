@@ -76,8 +76,8 @@ const BRAINSTORM_SCENARIOS = [
     impact: '9.7 / 10',
     synapses: [
       { name: 'Homoglyph Registration', desc: 'Registration of lookalike domain using Cyrillic lookalike characters (e.g. gооgle.com)', color: '#FF0055' },
-      { name: 'LLM Stylometric Clone', desc: 'Generative AI trains on executive public speeches to mirror writing tone', color: '#9D4EDD' },
-      { name: 'Targeted Transmission', desc: 'Fraudulent wire request sent to finance team during out-of-office window', color: '#FFB703' },
+      { name: 'LLM Stylometric Clone', desc: 'Generative AI trains on executive public speeches to mirror writing tone', color: '#00F5FF' },
+      { name: 'Targeted Transmission', desc: 'Fraudulent wire request sent to finance team during out-of-office window', color: '#FBBF24' },
       { name: 'Financial Exfiltration', desc: 'Urgent compliance override triggers unauthorized fund release', color: '#FF0055' },
     ],
     countermeasures: [
@@ -146,7 +146,7 @@ export default function CyberBrainstorm() {
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
               Cybersecurity Brainstorm & Threat Matrix
             </h2>
-            <span className="tag tag-purple" style={{ fontSize: '0.72rem', letterSpacing: '0.08em' }}>
+            <span className="tag tag-cyan" style={{ fontSize: '0.72rem', letterSpacing: '0.08em' }}>
               NEURAL THREAT LAB
             </span>
           </div>
@@ -163,7 +163,7 @@ export default function CyberBrainstorm() {
           style={{
             display: 'flex', alignItems: 'center', gap: '0.5rem',
             padding: '0.6rem 1.25rem', fontSize: '0.85rem',
-            background: 'linear-gradient(135deg, #00FF9D 0%, #00E5FF 50%, #9D4EDD 100%)',
+            background: 'linear-gradient(135deg, #00FFA3 0%, #00F5FF 100%)',
             color: '#020713', fontWeight: 800, border: 'none'
           }}
         >
@@ -295,7 +295,7 @@ export default function CyberBrainstorm() {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <span style={{ fontSize: '1.1rem' }}>🔮</span>
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-purple)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-gold)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 AI Red-Team Diagnostic Reasoning
               </span>
             </div>
@@ -362,10 +362,10 @@ export default function CyberBrainstorm() {
           </div>
           <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {[
-              { name: 'DNS Authentication Surface (SPF/DKIM)', risk: 85, color: '#00FF9D' },
-              { name: 'SMTP Transport Security (TLS/STARTTLS)', risk: 72, color: '#00E5FF' },
-              { name: 'Policy Enforcement Alignment (DMARC/BIMI)', risk: 91, color: '#9D4EDD' },
-              { name: 'Identity Spoofing & BEC Susceptibility', risk: 64, color: '#FFB703' },
+              { name: 'DNS Authentication Surface (SPF/DKIM)', risk: 85, color: '#00FFA3' },
+              { name: 'SMTP Transport Security (TLS/STARTTLS)', risk: 72, color: '#00F5FF' },
+              { name: 'Policy Enforcement Alignment (DMARC/BIMI)', risk: 91, color: '#FBBF24' },
+              { name: 'Identity Spoofing & BEC Susceptibility', risk: 64, color: '#F59E0B' },
             ].map((metric, i) => (
               <div key={i}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.3rem' }}>

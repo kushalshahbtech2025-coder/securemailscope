@@ -197,7 +197,7 @@ export default function Landing() {
       demo: (
         <div className="vp-gauge-wrap">
           <svg width="140" height="140" viewBox="0 0 140 140">
-            <circle cx="70" cy="70" r="56" fill="none" stroke="rgba(109,40,217,0.15)" strokeWidth="8"/>
+            <circle cx="70" cy="70" r="56" fill="none" stroke="rgba(0,245,255,0.12)" strokeWidth="8"/>
             <circle cx="70" cy="70" r="56" fill="none"
               stroke="url(#vg)" strokeWidth="8"
               strokeDasharray="351.86" strokeDashoffset={351.86*(1-62/100)}
@@ -205,7 +205,7 @@ export default function Landing() {
               style={{ transition:'stroke-dashoffset 1.5s ease' }}/>
             <defs>
               <linearGradient id="vg" x1="0" y1="0" x2="1" y2="0">
-                <stop stopColor="#6D28D9"/><stop offset="1" stopColor="#059669"/>
+                <stop stopColor="#00F5FF"/><stop offset="1" stopColor="#00FFA3"/>
               </linearGradient>
             </defs>
           </svg>
@@ -237,7 +237,7 @@ export default function Landing() {
     <div className="land">
 
       {/* ── NOISE + MESH ── */}
-      <div className="land-mesh" style={{ backgroundImage:`url('/hero-mesh.jpg')` }}/>
+      <div className="land-mesh"/>
       <div className="land-noise"/>
       <div className="land-vignette"/>
 
@@ -576,8 +576,8 @@ export default function Landing() {
           <div>
             <div className="land-brand lf-brand">
               <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
-                <path d="M14 2L3 7.5V14C3 19.55 7.84 24.74 14 26C20.16 24.74 25 19.55 25 14V7.5L14 2Z" stroke="#6D28D9" strokeWidth="1.8"/>
-                <path d="M9 14l3 3 7-7" stroke="#34D399" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M14 2L3 7.5V14C3 19.55 7.84 24.74 14 26C20.16 24.74 25 19.55 25 14V7.5L14 2Z" stroke="#00F5FF" strokeWidth="1.8"/>
+                <path d="M9 14l3 3 7-7" stroke="#00FFA3" strokeWidth="2" strokeLinecap="round"/>
               </svg>
               <span>SecureMailScope</span>
             </div>

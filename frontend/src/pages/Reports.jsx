@@ -37,7 +37,7 @@ const REPORT_TEMPLATES = [
     icon: '⛓',
     pages: 3,
     tag: 'PDF + JSON',
-    tagColor: 'tag-purple',
+    tagColor: 'tag-gold',
   },
 ];
 

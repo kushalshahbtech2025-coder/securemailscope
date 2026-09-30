@@ -253,7 +253,7 @@ export default function SocCommandCenter({ onLaunchScanner }) {
             </div>
             <div>
               <span style={{ color: 'var(--text-muted)' }}>BLOCK: </span>
-              <span style={{ color: '#A78BFA' }}>#4834</span>
+              <span style={{ color: '#FBBF24' }}>#4834</span>
             </div>
           </div>
         </div>
