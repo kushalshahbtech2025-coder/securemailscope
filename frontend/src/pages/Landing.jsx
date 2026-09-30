@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import './Landing.css';
 import { soundManager } from '../data/sound.js';
 import CyberHologramShield from '../components/CyberHologramShield.jsx';
+import SocCommandCenter from '../components/SocCommandCenter.jsx';
 
 /* ── tiny typing hook ── */
 function useTyping(words, speed = 80, pause = 1800) {
@@ -256,6 +257,7 @@ export default function Landing() {
             <span>SecureMailScope</span>
           </a>
           <div className="land-nav-links">
+            <a href="#soc-lab">SOC Lab</a>
             <a href="#about">Features</a>
             <a href="#how">How It Works</a>
             <a href="#video">Demo Video</a>
@@ -316,6 +318,22 @@ export default function Landing() {
           <CyberHologramShield onExplore={() => navigate('/dashboard')} />
         </div>
 
+      </section>
+
+      {/* ══ SOC OPERATIONS COMMAND BATTLESTATION ══ */}
+      <section className="land-soc-section" id="soc-lab" style={{ position: 'relative', zIndex: 1, padding: '3rem 1.5rem 5rem' }}>
+        <div className="land-wrap">
+          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+            <div className="sec-eyebrow">Real-Time Surveillance</div>
+            <h2 className="sec-h2">
+              Cybersecurity Operations Lab <span className="grad-txt">// SOC Battlestation</span>
+            </h2>
+            <p className="sec-sub">
+              Live multi-monitor telemetry, global threat attack map, packet forensics, and immutable blockchain settlement nodes.
+            </p>
+          </div>
+          <SocCommandCenter onLaunchScanner={() => navigate('/dashboard/scanner')} />
+        </div>
       </section>
 
       {/* ══ FEATURES ══ */}
