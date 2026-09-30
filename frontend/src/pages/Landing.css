@@ -4,19 +4,20 @@
 
 /* ─── Variables ─────────────────────────────── */
 :root {
-  --l-bg:       #020713;
-  --l-surface:  rgba(8, 20, 44, 0.7);
-  --l-border:   rgba(0, 229, 255, 0.16);
-  --l-border-h: rgba(0, 229, 255, 0.45);
-  --l-cyan:     #00E5FF;
-  --l-emerald:  #00FF9D;
+  --l-bg:       #030712;
+  --l-surface:  rgba(6, 14, 28, 0.85);
+  --l-border:   rgba(0, 245, 255, 0.16);
+  --l-border-h: rgba(0, 245, 255, 0.5);
+  --l-cyan:     #00F5FF;
+  --l-emerald:  #00FFA3;
   --l-red:      #FF0055;
-  --l-amber:    #FFB703;
-  --l-purple:   #9D4EDD;
-  --l-text-1:   #EDF6FF;
-  --l-text-2:   #88A2C7;
-  --l-text-3:   #415A77;
-  --l-mono:     'Fira Code', 'Courier New', monospace;
+  --l-amber:    #F59E0B;
+  --l-gold:     #FBBF24;
+  --l-purple:   #FBBF24; /* Mapped to Consensus Gold */
+  --l-text-1:   #F0F6FC;
+  --l-text-2:   #94A3B8;
+  --l-text-3:   #475569;
+  --l-mono:     'JetBrains Mono', 'Fira Code', monospace;
   --l-head:     'Outfit', 'Segoe UI', sans-serif;
   --l-body:     'Inter', system-ui, sans-serif;
   --l-r:        12px;
@@ -29,10 +30,10 @@
   font-family: var(--l-body);
   background: var(--l-bg);
   background-image: 
-    radial-gradient(circle at 50% 0%, rgba(0, 229, 255, 0.09), transparent 60%),
-    linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
-  background-size: 100% 100%, 40px 40px, 40px 40px;
+    radial-gradient(circle at 50% 0%, rgba(0, 245, 255, 0.08), transparent 60%),
+    linear-gradient(rgba(0, 245, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 245, 255, 0.02) 1px, transparent 1px);
+  background-size: 100% 100%, 36px 36px, 36px 36px;
   color: var(--l-text-1);
   min-height: 100vh;
   position: relative;
@@ -43,8 +44,8 @@
 /* ─── Background Layers ──────────────────────── */
 .land-mesh {
   position: fixed; inset: 0; z-index: 0;
-  background: radial-gradient(circle at 80% 20%, rgba(157, 78, 221, 0.12), transparent 50%),
-              radial-gradient(circle at 20% 80%, rgba(0, 229, 255, 0.1), transparent 50%);
+  background: radial-gradient(circle at 80% 20%, rgba(251, 191, 36, 0.08), transparent 50%),
+              radial-gradient(circle at 20% 80%, rgba(0, 245, 255, 0.08), transparent 50%);
   opacity: 0.8;
   pointer-events: none;
 }

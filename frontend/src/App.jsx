@@ -9,6 +9,7 @@ import CyberBrainstorm from './pages/CyberBrainstorm.jsx';
 import HeaderAnalysis from './pages/HeaderAnalysis.jsx';
 import AuditLog       from './pages/AuditLog.jsx';
 import Reports        from './pages/Reports.jsx';
+import GlobalDefenseTicker from './components/GlobalDefenseTicker.jsx';
 import { soundManager } from './data/sound.js';
 
 const NAV_ITEMS = [
@@ -235,6 +236,7 @@ function AppShell() {
           transition: 'margin-left 0.28s cubic-bezier(0.16, 1, 0.3, 1)'
         }}
       >
+        <GlobalDefenseTicker />
         <Topbar apiOnline={apiOnline}/>
         <main className="page-content">
           <AnimatePresence mode="wait">

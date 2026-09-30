@@ -4,6 +4,7 @@ import './Landing.css';
 import { soundManager } from '../data/sound.js';
 import CyberHologramShield from '../components/CyberHologramShield.jsx';
 import SocCommandCenter from '../components/SocCommandCenter.jsx';
+import GlobalDefenseTicker from '../components/GlobalDefenseTicker.jsx';
 
 /* ── tiny typing hook ── */
 function useTyping(words, speed = 80, pause = 1800) {
@@ -61,12 +62,12 @@ function useCounter(target, duration = 1200) {
 
 /* ── feature data ── */
 const FEATURES = [
-  { icon: '🤖', title: 'AI Threat Scoring',    desc: 'XGBoost model trained on breach datasets rates your posture 0–100 with CVSS-mapped severities.', tag: 'Machine Learning', color: '#6D28D9' },
-  { icon: '🔒', title: 'Live TLS Inspector',    desc: 'Real-time SMTP connection analysis — TLS version, cipher suites, certificate chain & STARTTLS.', tag: 'SSLyze Engine',     color: '#2563EB' },
-  { icon: '✅', title: 'SPF / DKIM / DMARC',   desc: 'Full DNS record validation with one-click auto-generated hardened configurations.', tag: 'dnspython',         color: '#059669' },
-  { icon: '📋', title: 'Header Forensics',      desc: 'Paste raw email headers — get full authentication breakdown and spoofing detection.', tag: 'RFC 2822 Parser',   color: '#D97706' },
-  { icon: '⛓',  title: 'Blockchain Audit Log', desc: 'Every scan is SHA-256 hashed, stored on IPFS, recorded on Ethereum — tamper-proof forever.', tag: 'Solidity / Web3',  color: '#7C3AED' },
-  { icon: '📄', title: 'Compliance Reports',    desc: 'Export PDF reports mapped to ISO 27001, NIST CSF, GDPR with embedded blockchain proof.', tag: 'ReportLab',         color: '#DB2777' },
+  { icon: '🤖', title: 'AI Threat Scoring',    desc: 'XGBoost model trained on breach datasets rates your posture 0–100 with CVSS-mapped severities.', tag: 'Machine Learning', color: '#00F5FF' },
+  { icon: '🔒', title: 'Live TLS Inspector',    desc: 'Real-time SMTP connection analysis — TLS version, cipher suites, certificate chain & STARTTLS.', tag: 'SSLyze Engine',     color: '#38BDF8' },
+  { icon: '✅', title: 'SPF / DKIM / DMARC',   desc: 'Full DNS record validation with one-click auto-generated hardened configurations.', tag: 'dnspython',         color: '#00FFA3' },
+  { icon: '📋', title: 'Header Forensics',      desc: 'Paste raw email headers — get full authentication breakdown and spoofing detection.', tag: 'RFC 2822 Parser',   color: '#F59E0B' },
+  { icon: '⛓',  title: 'Blockchain Audit Log', desc: 'Every scan is SHA-256 hashed, stored on IPFS, recorded on Ethereum — tamper-proof forever.', tag: 'Solidity / Web3',  color: '#FBBF24' },
+  { icon: '📄', title: 'Compliance Reports',    desc: 'Export PDF reports mapped to ISO 27001, NIST CSF, GDPR with embedded blockchain proof.', tag: 'ReportLab',         color: '#00F5FF' },
 ];
 
 const HOW_STEPS = [
@@ -246,11 +247,11 @@ export default function Landing() {
           <a href="#" className="land-brand">
             <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
               <path d="M14 2L3 7.5V14C3 19.55 7.84 24.74 14 26C20.16 24.74 25 19.55 25 14V7.5L14 2Z"
-                stroke="url(#lbg)" strokeWidth="1.8" fill="rgba(109,40,217,0.08)"/>
-              <path d="M9 14l3 3 7-7" stroke="#34D399" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                stroke="url(#lbg)" strokeWidth="1.8" fill="rgba(0,245,255,0.08)"/>
+              <path d="M9 14l3 3 7-7" stroke="#00FFA3" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
               <defs>
                 <linearGradient id="lbg" x1="3" y1="2" x2="25" y2="26">
-                  <stop stopColor="#6D28D9"/><stop offset="1" stopColor="#059669"/>
+                  <stop stopColor="#00F5FF"/><stop offset="1" stopColor="#00FFA3"/>
                 </linearGradient>
               </defs>
             </svg>
@@ -271,6 +272,11 @@ export default function Landing() {
           </div>
         </div>
       </nav>
+
+      {/* ── LIVE BLOCKCHAIN & DEFENSE TELEMETRY TICKER ── */}
+      <div style={{ position: 'relative', zIndex: 90, marginTop: '64px' }}>
+        <GlobalDefenseTicker />
+      </div>
 
       {/* ══ HERO ══ */}
       <section className="land-hero" id="home">

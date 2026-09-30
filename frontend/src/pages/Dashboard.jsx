@@ -136,30 +136,105 @@ export default function Dashboard({ apiOnline }) {
   const navigate = useNavigate();
   const data = DEFAULT_SCAN;
   const [logs, setLogs] = useState(AUDIT_LOGS);
+  const [activeChain, setActiveChain] = useState('sepolia');
 
   useEffect(() => {
     getBlockchainLogs(5).then(r => { if (r?.records?.length) setLogs(r.records); });
   }, []);
 
+  const CHAINS = [
+    { id: 'sepolia', name: 'Ethereum Sepolia', icon: '⛓️', consensus: 'PoS (Finalized)', rpc: '12ms', color: '#FBBF24' },
+    { id: 'arbitrum', name: 'Arbitrum Nitro', icon: '🚀', consensus: 'Rollup L2', rpc: '8ms', color: '#00F5FF' },
+    { id: 'besu', name: 'Hyperledger Besu', icon: '🛡️', consensus: 'IBFT 2.0 Enterprise', rpc: '4ms', color: '#00FFA3' },
+    { id: 'polygon', name: 'Polygon zkEVM', icon: '⚡', consensus: 'Zero-Knowledge Proof', rpc: '15ms', color: '#38BDF8' },
+  ];
+
   return (
     <div className="animate-fade">
+      {/* ── HIGH-TECH MULTI-CHAIN CONSENSUS & NODE STATUS BAR ── */}
+      <div style={{
+        marginBottom: '1.25rem', padding: '0.85rem 1.25rem',
+        background: 'rgba(6, 14, 28, 0.95)',
+        border: '1px solid rgba(0, 245, 255, 0.25)',
+        borderRadius: '12px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: '1rem',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.4), inset 0 0 20px rgba(0, 245, 255, 0.03)'
+      }}>
+        {/* Left: Chain Selectors */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            NODE NETWORK:
+          </span>
+          {CHAINS.map(c => {
+            const active = activeChain === c.id;
+            return (
+              <button
+                key={c.id}
+                onClick={() => {
+                  soundManager.playClick();
+                  setActiveChain(c.id);
+                }}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                  padding: '0.3rem 0.65rem',
+                  background: active ? `${c.color}20` : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${active ? c.color : 'rgba(255,255,255,0.08)'}`,
+                  borderRadius: '6px',
+                  color: active ? c.color : 'var(--text-secondary)',
+                  fontSize: '0.75rem', fontWeight: 700,
+                  fontFamily: 'var(--font-mono)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: active ? `0 0 12px ${c.color}35` : 'none'
+                }}
+              >
+                <span>{c.icon}</span>
+                <span>{c.name}</span>
+                {active && (
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: c.color, boxShadow: `0 0 6px ${c.color}` }} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right: Cryptographic Telemetry Stats */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '0.74rem', fontFamily: 'var(--font-mono)' }}>
+          <div>
+            <span style={{ color: 'var(--text-muted)' }}>GAS: </span>
+            <span style={{ color: '#00F5FF', fontWeight: 700 }}>18.2 GWEI</span>
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.15)' }}>|</div>
+          <div>
+            <span style={{ color: 'var(--text-muted)' }}>CONTRACT: </span>
+            <span style={{ color: '#00FFA3', fontWeight: 700 }}>0x71C8…2bC8 ✓</span>
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.15)' }}>|</div>
+          <div>
+            <span style={{ color: 'var(--text-muted)' }}>STATUS: </span>
+            <span style={{ color: '#FBBF24', fontWeight: 700 }}>100% SYNCED</span>
+          </div>
+        </div>
+      </div>
+
       {/* Cyber Threat Brainstorm Alert Banner */}
       <div style={{
         marginBottom: '1.25rem', padding: '1rem 1.35rem',
-        background: 'linear-gradient(135deg, rgba(0,229,255,0.08) 0%, rgba(157,78,221,0.14) 100%)',
-        border: '1px solid rgba(0,229,255,0.28)', borderRadius: '12px',
+        background: 'linear-gradient(135deg, rgba(0,245,255,0.07) 0%, rgba(251,191,36,0.08) 100%)',
+        border: '1px solid rgba(0,245,255,0.25)', borderRadius: '12px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.85rem',
-        boxShadow: '0 4px 24px rgba(0,229,255,0.07)'
+        boxShadow: '0 4px 24px rgba(0,245,255,0.06)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
           <span style={{ fontSize: '1.5rem', animation: 'spin 12s linear infinite', display: 'inline-block' }}>🧠</span>
           <div>
             <div style={{ fontWeight: 700, fontSize: '0.94rem', color: '#FFF', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              Cybersecurity Brainstorm & Threat Matrix
-              <span className="tag tag-cyan" style={{ fontSize: '0.65rem' }}>AI LAB</span>
+              Cybersecurity Threat Matrix &amp; Attack Surface
+              <span className="tag tag-cyan" style={{ fontSize: '0.65rem' }}>AI FORENSICS</span>
             </div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-              Synthesizing 4 active email attack vectors: DKIM Replay, BGP DNS Route Hijack & Subdomain Takeover.
+              Synthesizing 4 active email attack vectors: DKIM Replay, BGP DNS Route Hijack &amp; Subdomain Takeover.
             </div>
           </div>
         </div>
@@ -171,8 +246,8 @@ export default function Dashboard({ apiOnline }) {
           className="btn btn-primary"
           style={{
             fontSize: '0.82rem', padding: '0.45rem 1rem',
-            background: 'linear-gradient(135deg, #00FF9D 0%, #00E5FF 100%)',
-            color: '#020713', fontWeight: 800, border: 'none'
+            background: 'linear-gradient(135deg, #00FFA3 0%, #00F5FF 100%)',
+            color: '#030712', fontWeight: 800, border: 'none'
           }}
         >
           Launch Threat Brainstormer ↗
@@ -183,7 +258,7 @@ export default function Dashboard({ apiOnline }) {
       {!apiOnline && (
         <div style={{
           marginBottom: '1rem', padding: '0.65rem 1.25rem',
-          background: 'rgba(255,184,0,0.06)', border: '1px solid rgba(255,184,0,0.2)',
+          background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.25)',
           borderRadius: 10, fontSize: '0.82rem', color: 'var(--accent-amber)',
           display: 'flex', alignItems: 'center', gap: '0.6rem'
         }}>
@@ -200,7 +275,7 @@ export default function Dashboard({ apiOnline }) {
         <StatCard label="Security Score" value={data.score} unit="/100" color={getScoreColor(data.score)} icon="🛡" sub={`Grade ${data.grade} · yourdomain.com`} delay={0} />
         <StatCard label="Critical Issues" value={data.checks.filter(c => c.status === 'fail').length} color="var(--accent-red)" icon="⚠" sub={`${data.checks.filter(c => c.status === 'warn').length} warnings · ${data.checks.filter(c => c.status === 'pass').length} passed`} delay={1} />
         <StatCard label="Scans Today" value={12} color="var(--accent-cyan)" icon="⟳" sub="+3 from yesterday" delay={2} />
-        <StatCard label="Blockchain Logs" value={logs.length} color="#A78BFA" icon="⛓" sub="All confirmed on-chain" delay={3} />
+        <StatCard label="Blockchain Logs" value={logs.length} color="var(--accent-gold)" icon="⛓" sub="All confirmed on-chain" delay={3} />
       </div>
 
       {/* Row 1: Area Chart + Gauge */}
@@ -277,8 +352,8 @@ export default function Dashboard({ apiOnline }) {
           {/* Breach Chart */}
           <div className="card">
             <div className="card-header">
-              <span className="card-title">Breach Intelligence</span>
-              <span className="tag tag-purple">6 Months</span>
+              <span className="card-title">Threat Exposure Heuristics</span>
+              <span className="tag tag-amber">CVE &amp; BREACH DB</span>
             </div>
             <div className="card-body" style={{ padding: '1rem' }}>
               <ResponsiveContainer width="100%" height={140}>
@@ -288,18 +363,18 @@ export default function Dashboard({ apiOnline }) {
                   <YAxis allowDecimals={false} tick={{ fill: '#4A6B8A', fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip content={<ChartTip />} />
                   <Line type="monotone" dataKey="count" name="Breaches"
-                    stroke="#EC4899" strokeWidth={2.5}
-                    dot={{ fill: '#EC4899', r: 4, strokeWidth: 0 }}
-                    activeDot={{ r: 6, fill: '#EC4899', stroke: '#050B18', strokeWidth: 2 }}
+                    stroke="#F59E0B" strokeWidth={2.5}
+                    dot={{ fill: '#F59E0B', r: 4, strokeWidth: 0 }}
+                    activeDot={{ r: 6, fill: '#F59E0B', stroke: '#030712', strokeWidth: 2 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
               <div style={{
                 marginTop: '0.75rem', padding: '0.6rem 0.85rem',
-                background: 'rgba(236,72,153,0.06)', border: '1px solid rgba(236,72,153,0.15)',
-                borderRadius: 8, display: 'flex', gap: '0.5rem', fontSize: '0.78rem', color: '#EC4899'
+                background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
+                borderRadius: 8, display: 'flex', gap: '0.5rem', fontSize: '0.78rem', color: '#FCD34D'
               }}>
-                <span>⚠</span> 1 active exposure · HaveIBeenPwned — Sep 2026
+                <span>⚠</span> 1 active exposure · HaveIBeenPwned &amp; DarkWeb Monitor
               </div>
             </div>
           </div>
@@ -307,8 +382,21 @@ export default function Dashboard({ apiOnline }) {
           {/* Blockchain Logs */}
           <div className="card" style={{ flex: 1 }}>
             <div className="card-header">
-              <span className="card-title">Recent Blockchain Logs</span>
-              <span className="chain-badge">⛓ Ethereum</span>
+              <span className="card-title">Immutable Audit Trail</span>
+              <button
+                onClick={() => {
+                  soundManager.playClick();
+                  navigate('/dashboard/audit');
+                }}
+                className="btn btn-outline"
+                style={{
+                  fontSize: '0.72rem', padding: '0.2rem 0.6rem',
+                  display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                  borderColor: 'rgba(251,191,36,0.35)', color: '#FBBF24'
+                }}
+              >
+                <span>⛓</span> Explorer ↗
+              </button>
             </div>
             <div className="card-body" style={{ padding: '0.5rem 0.75rem' }}>
               {logs.slice(0, 4).map(log => (
@@ -316,9 +404,13 @@ export default function Dashboard({ apiOnline }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '0.55rem 0.5rem', borderBottom: '1px solid rgba(26,58,92,0.25)',
                   fontSize: '0.8rem', gap: '0.75rem', transition: 'background 0.2s',
-                  borderRadius: 4, cursor: 'default'
+                  borderRadius: 4, cursor: 'pointer'
                 }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,212,255,0.03)'}
+                  onClick={() => {
+                    soundManager.playClick();
+                    navigate('/dashboard/audit');
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,245,255,0.05)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
                   <span className="mono" style={{ color: 'var(--accent-cyan)', fontSize: '0.75rem', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -328,6 +420,15 @@ export default function Dashboard({ apiOnline }) {
                   <span style={{ fontWeight: 700, color: getScoreColor(log.score), flexShrink: 0 }}>{log.score}</span>
                 </div>
               ))}
+              <div style={{
+                marginTop: '0.65rem', padding: '0.4rem 0.6rem',
+                background: 'rgba(0,245,255,0.03)', border: '1px dashed rgba(0,245,255,0.18)',
+                borderRadius: 6, fontSize: '0.68rem', fontFamily: 'var(--font-mono)',
+                color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between'
+              }}>
+                <span>MERKLE: 0x4f82…d91a</span>
+                <span style={{ color: '#00FFA3' }}>secp256k1 ✓</span>
+              </div>
             </div>
           </div>
         </div>
