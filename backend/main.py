@@ -70,29 +70,33 @@ class ScanResult(BaseModel):
 # ── Gemini AI Helper ──
 
 async def generate_gemini_analysis(prompt: str, fallback_text: str = "") -> dict:
-    """Call Google Gemini 1.5 Flash via REST API with fallback."""
+    """Call Google Gemini Flash via REST API with multi-model fallback."""
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not api_key:
         return {"content": fallback_text, "source": "rule_engine"}
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    candidate_models = ["gemini-3-flash-preview", "gemini-3.8-flash", "gemini-flash-latest"]
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": 0.3, "maxOutputTokens": 600}
     }
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(url, json=payload)
-            if resp.status_code == 200:
-                data = resp.json()
-                candidates = data.get("candidates", [])
-                if candidates and "content" in candidates[0]:
-                    parts = candidates[0]["content"].get("parts", [])
-                    if parts and "text" in parts[0]:
-                        return {"content": parts[0]["text"].strip(), "source": "gemini-1.5-flash"}
-            return {"content": fallback_text, "source": "rule_engine", "error": f"Gemini status {resp.status_code}"}
-    except Exception as e:
-        return {"content": fallback_text, "source": "rule_engine", "error": str(e)}
+
+    async with httpx.AsyncClient(timeout=8.0) as client:
+        for model in candidate_models:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+            try:
+                resp = await client.post(url, json=payload)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    candidates = data.get("candidates", [])
+                    if candidates and "content" in candidates[0]:
+                        parts = candidates[0]["content"].get("parts", [])
+                        if parts and "text" in parts[0]:
+                            return {"content": parts[0]["text"].strip(), "source": model}
+            except Exception:
+                continue
+
+    return {"content": fallback_text, "source": "rule_engine"}
 
 
 # ── Helper Functions ──
