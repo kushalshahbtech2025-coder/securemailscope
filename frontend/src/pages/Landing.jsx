@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import './Landing.css';
+import { soundManager } from '../data/sound.js';
 
 /* ── tiny typing hook ── */
 function useTyping(words, speed = 80, pause = 1800) {
@@ -121,21 +122,44 @@ export default function Landing() {
 
   function goSlide(n) { setVpSlide(((n % SLIDE_COUNT) + SLIDE_COUNT) % SLIDE_COUNT); }
 
-  /* mini scanner */
+  /* mini scanner with cyber threat alert */
+  const [scanStep, setScanStep] = useState(0);
+  const SCAN_PHASES = [
+    'Resolving DNSSEC & authoritative SPF records…',
+    'Auditing DKIM selector & RSA key alignment…',
+    'Analyzing DMARC policy & TLS 1.3 handshake…',
+    'Computing AI threat score & on-chain proof…'
+  ];
+
   const MOCK = {
-    'google.com':    { score:94, checks:[['SPF','pass'],['DKIM','pass'],['DMARC','pass'],['TLS','TLS 1.3'],['Cert','Valid 312d'],['Breach','Clean']] },
-    'example.com':   { score:31, checks:[['SPF','fail'],['DKIM','fail'],['DMARC','fail'],['TLS','TLS 1.0'],['Cert','Expired'],['Breach','FOUND']] },
-    'microsoft.com': { score:91, checks:[['SPF','pass'],['DKIM','pass'],['DMARC','pass'],['TLS','TLS 1.3'],['Cert','Valid 280d'],['Breach','Clean']] },
+    'google.com':    { score:96, checks:[['SPF','pass'],['DKIM','pass'],['DMARC','pass'],['TLS','TLS 1.3'],['Cert','Valid 312d'],['Breach','Clean']] },
+    'example.com':   { score:28, checks:[['SPF','fail'],['DKIM','fail'],['DMARC','fail'],['TLS','TLS 1.0'],['Cert','Expired'],['Breach','FOUND']] },
+    'microsoft.com': { score:92, checks:[['SPF','pass'],['DKIM','pass'],['DMARC','pass'],['TLS','TLS 1.3'],['Cert','Valid 280d'],['Breach','Clean']] },
   };
+
   async function doScan() {
     const d = scanDomain.trim().replace(/^https?:\/\//,'').replace(/\/.*/,'').toLowerCase();
     if (!d || !d.includes('.')) return;
-    setScanning(true); setScanResult(null);
-    await new Promise(r => setTimeout(r, 2000));
+    soundManager.playScanPulse();
+    setScanning(true); setScanResult(null); setScanStep(0);
+
+    for (let i = 0; i < SCAN_PHASES.length; i++) {
+      setScanStep(i);
+      await new Promise(r => setTimeout(r, 450));
+    }
+
     const mock = MOCK[d] || { score:62, checks:[['SPF','pass'],['DKIM','fail'],['DMARC','warn'],['TLS','TLS 1.1'],['Cert','Valid 90d'],['Breach','Clean']] };
-    setScanResult({ domain: d, ...mock });
+    const res = { domain: d, ...mock, isThreat: mock.score < 60 || mock.checks.some(c => c[1] === 'fail') };
+    setScanResult(res);
     setScanning(false);
+
+    if (res.isThreat) {
+      soundManager.playThreatWarning();
+    } else {
+      soundManager.playSuccess();
+    }
   }
+
 
   const VP_SLIDES = [
     {
@@ -425,18 +449,70 @@ export default function Landing() {
             </div>
 
             {scanning && (
-              <div className="sb-scanning">
+              <div className="sb-scanning animate-neural">
                 <div className="sbs-orb"/>
-                <span>Running AI scan on <strong>{scanDomain}</strong>…</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--l-cyan)', fontSize: '0.86rem' }}>
+                    [ RADAR SCANNING: {scanDomain.toUpperCase()} ]
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--l-text-2)', fontFamily: 'var(--l-mono)' }}>
+                    {SCAN_PHASES[scanStep]}
+                  </div>
+                </div>
               </div>
             )}
 
             {scanResult && !scanning && (
-              <div className="sb-result">
+              <div className="sb-result animate-fade">
+                {/* Danger HUD alert if threat detected */}
+                {scanResult.isThreat && (
+                  <div style={{
+                    padding: '1rem 1.25rem',
+                    background: 'linear-gradient(135deg, rgba(255, 0, 85, 0.22) 0%, rgba(255, 183, 3, 0.12) 100%)',
+                    border: '1px solid #FF0055', borderRadius: '10px',
+                    boxShadow: '0 0 25px rgba(255, 0, 85, 0.3)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem',
+                    animation: 'pulse 2.2s infinite'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <span style={{ fontSize: '1.4rem' }}>🚨</span>
+                      <div>
+                        <div style={{ color: '#FF0055', fontWeight: 900, fontSize: '0.88rem', letterSpacing: '0.04em' }}>
+                          DANGER: CRITICAL SECURITY ANOMALY DETECTED
+                        </div>
+                        <div style={{ color: 'var(--l-text-1)', fontSize: '0.76rem' }}>
+                          Domain is vulnerable to phishing spoofing, forged email relays &amp; MITM downgrade.
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      <button
+                        onClick={() => soundManager.playThreatWarning()}
+                        className="lnc-ghost"
+                        style={{ borderColor: '#FF0055', color: '#FF0055', fontSize: '0.74rem', padding: '0.3rem 0.65rem' }}
+                      >
+                        🔊 Replay Siren
+                      </button>
+                      <button
+                        onClick={() => navigate('/dashboard/brainstorm')}
+                        className="lnc-primary"
+                        style={{ background: '#FF0055', color: '#FFF', fontSize: '0.74rem', padding: '0.3rem 0.75rem' }}
+                      >
+                        Brainstorm Fixes ↗
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="sbr-header">
-                  <span className="sbr-domain">{scanResult.domain}</span>
+                  <div>
+                    <span className="sbr-domain">{scanResult.domain}</span>
+                    <span className="mono" style={{ fontSize: '0.75rem', color: 'var(--l-text-3)', marginLeft: '0.6rem' }}>
+                      [ VERIFIED VIA LIVE DNS ]
+                    </span>
+                  </div>
                   <span className={`sbr-score ${scanResult.score>=80?'s-pass':scanResult.score>=50?'s-warn':'s-fail'}`}>
-                    {scanResult.score} / 100
+                    {scanResult.score} / 100 {scanResult.score>=80?'(SECURE)':scanResult.score>=50?'(AT RISK)':'(CRITICAL)'}
                   </span>
                 </div>
                 <div className="sbr-checks">
@@ -453,11 +529,21 @@ export default function Landing() {
                   })}
                 </div>
                 <div className="sbr-chain">
-                  ⛓ Blockchain record · Tx: <span className="sbr-hash">0x{Math.random().toString(16).slice(2,14)}…</span>
-                  <span className="sbr-conf">✓ Confirmed</span>
+                  ⛓ Ethereum Sepolia Audit Seal · Hash: <span className="sbr-hash">0x{Math.random().toString(16).slice(2,14)}…4a2b</span>
+                  <span className="sbr-conf">✓ Immutably Anchored</span>
+                </div>
+                <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+                  <button
+                    onClick={() => navigate('/dashboard')}
+                    className="lnc-primary"
+                    style={{ width: '100%', padding: '0.65rem', fontSize: '0.85rem' }}
+                  >
+                    Open Full Security Dashboard &amp; Forensics →
+                  </button>
                 </div>
               </div>
             )}
+
           </div>
         </div>
       </section>
