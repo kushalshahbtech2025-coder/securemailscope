@@ -58,16 +58,18 @@ function ScoreGauge({ score }) {
             return <line key={v} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.15)" strokeWidth={1.5} />;
           })}
         </svg>
-        {/* Center label */}
+        {/* Center label with Holographic Lock Icon */}
         <div style={{
           position: 'absolute', inset: 0,
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center'
         }}>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: '2.4rem', fontWeight: 700, lineHeight: 1, color }}>{display}</span>
-          <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.12em', marginTop: 2 }}>{label}</span>
+          <span style={{ fontSize: '1rem', color, filter: `drop-shadow(0 0 8px ${color})`, marginBottom: -2 }}>🔒</span>
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: '2.3rem', fontWeight: 800, lineHeight: 1, color }}>{display}</span>
+          <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.14em', marginTop: 2 }}>{label}</span>
         </div>
       </div>
+
       {/* Severity pills */}
       <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem' }}>
         {SEVERITY_DIST.map(s => (

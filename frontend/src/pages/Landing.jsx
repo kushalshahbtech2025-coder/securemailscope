@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import './Landing.css';
 import { soundManager } from '../data/sound.js';
+import CyberHologramShield from '../components/CyberHologramShield.jsx';
 
 /* ── tiny typing hook ── */
 function useTyping(words, speed = 80, pause = 1800) {
@@ -310,32 +311,11 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Mock terminal card */}
-        <div className="hero-terminal">
-          <div className="ht-bar">
-            <div className="ht-dots"><span/><span/><span/></div>
-            <span className="ht-title">securemailscope — live scan</span>
-          </div>
-          <div className="ht-body">
-            <div className="ht-line"><span className="ht-prompt">$</span> scan --domain <span className="ht-green">{typed || 'acme.com'}<span className="ht-cur">_</span></span></div>
-            <div className="ht-line"><span className="ht-muted">Resolving DNS records…</span></div>
-            <div className="ht-results">
-              {[['SPF',true],['DKIM',false],['DMARC',null],['TLS 1.1',null]].map(([n,s])=>(
-                <div key={n} className="ht-row">
-                  <span className={`ht-icon ${s===true?'htg':s===false?'htr':'hty'}`}>{s===true?'✓':s===false?'✗':'⚠'}</span>
-                  <span>{n}</span>
-                  <span className={`ht-tag ${s===true?'htg':s===false?'htr':'hty'}`}>{s===true?'PASS':s===false?'FAIL':'WARN'}</span>
-                </div>
-              ))}
-            </div>
-            <div className="ht-score-line">
-              <span className="ht-muted">Threat Score:</span>
-              <span className="ht-score-val">62 / 100</span>
-              <span className="ht-badge-warn">AT RISK</span>
-            </div>
-            <div className="ht-chain">⛓ Logged · Tx: <span className="ht-green">0x4a9f3b21…e7cc</span></div>
-          </div>
+        {/* Cyber Hologram Lock & Cryptographic Shield */}
+        <div style={{ width: '100%', maxWidth: '820px', marginTop: '1rem', animation: 'fade-up 0.8s 0.35s ease both' }}>
+          <CyberHologramShield onExplore={() => navigate('/dashboard')} />
         </div>
+
       </section>
 
       {/* ══ FEATURES ══ */}
