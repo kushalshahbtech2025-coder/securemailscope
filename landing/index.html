@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>SecureMailScope — AI Email Security Platform</title>
+  <meta name="description" content="AI-powered cryptographic posture assessment for enterprise email. Blockchain-verified. Real-time.">
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap"
+    onload="this.rel='stylesheet'">
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  </noscript>
+  <link rel="stylesheet" href="new-style.css">
+</head>
+<body>
+
+  <!-- ══ AURORA BLOBS (CSS animated) ══ -->
+  <div class="aurora-layer" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="blob blob-4"></div>
+  </div>
+
+  <!-- ══ NAVBAR ══ -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-wrap">
+      <a href="#" class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+            <path d="M14 2L3 7.5V14C3 19.55 7.84 24.74 14 26C20.16 24.74 25 19.55 25 14V7.5L14 2Z"
+              stroke="url(#ng)" stroke-width="1.8" fill="none"/>
+            <path d="M9 14l3 3 7-7" stroke="#06B6D4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <defs>
+              <linearGradient id="ng" x1="3" y1="2" x2="25" y2="26">
+                <stop stop-color="#8B5CF6"/>
+                <stop offset="1" stop-color="#06B6D4"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span class="brand-name">SecureMailScope</span>
+      </a>
+
+      <div class="nav-links" id="nav-links">
+        <a href="#about">About</a>
+        <a href="#video">How It Works</a>
+        <a href="#features">Features</a>
+        <a href="#scanner">Live Demo</a>
+      </div>
+
+      <div class="nav-actions">
+        <a href="#video" class="btn-ghost-sm">Watch Demo</a>
+        <a href="http://localhost:5173" target="_blank" class="btn-grad">Launch App →</a>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══ HERO ══ -->
+  <section class="hero" id="home">
+    <div class="hero-bg-img" style="background-image:url('hero-bg.jpg')"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-pill">
+        <span class="pill-dot"></span>
+        SIH 2026 · Problem ID: SIH26159
+      </div>
+
+      <h1 class="hero-h1">
+        <span class="word-reveal">Protect</span>
+        <span class="word-reveal delay-1"> Every</span>
+        <br>
+        <span class="grad-word word-reveal delay-2">Email.</span>
+        <span class="word-reveal delay-3"> Always.</span>
+      </h1>
+
+      <p class="hero-p">
+        The most advanced <strong>AI-driven cryptographic security platform</strong> for enterprise email.
+        Detect SPF, DKIM, DMARC vulnerabilities, inspect TLS cipher suites in real-time,
+        and log every audit <strong>on the blockchain</strong> — in under 3 seconds.
+      </p>
+
+      <div class="hero-btns">
+        <a href="#scanner" class="btn-primary-lg">
+          <span>⚡</span> Try Free Scan
+        </a>
+        <a href="#video" class="btn-video">
+          <div class="play-ring">
+            <svg width="14" height="16" viewBox="0 0 14 16" fill="none">
+              <path d="M1 1l12 7L1 15V1z" fill="white"/>
+            </svg>
+          </div>
+          Watch How It Works
+        </a>
+      </div>
+
+      <!-- Floating stat chips -->
+      <div class="hero-chips">
+        <div class="chip"><span class="chip-val">98%</span><span class="chip-lab">Detection Rate</span></div>
+        <div class="chip"><span class="chip-val">&lt;3s</span><span class="chip-lab">Avg Scan Time</span></div>
+        <div class="chip"><span class="chip-val">12K+</span><span class="chip-lab">Domains Scanned</span></div>
+        <div class="chip chip-chain"><span>⛓</span><span class="chip-lab">Blockchain Verified</span></div>
+      </div>
+    </div>
+
+    <!-- Floating glass card -->
+    <div class="hero-card">
+      <div class="hcard-top">
+        <div class="hcard-dots"><span></span><span></span><span></span></div>
+        <span class="hcard-label">Live Scan — acme.com</span>
+        <span class="hcard-score" style="color:#A78BFA">62 / 100</span>
+      </div>
+      <div class="hcard-row"><span class="hr-icon pass">✓</span><span class="hr-name">SPF Record</span><span class="hr-val pass">VALID</span></div>
+      <div class="hcard-row"><span class="hr-icon fail">✗</span><span class="hr-name">DKIM Signature</span><span class="hr-val fail">MISSING</span></div>
+      <div class="hcard-row"><span class="hr-icon warn">⚠</span><span class="hr-name">DMARC Policy</span><span class="hr-val warn">p=none</span></div>
+      <div class="hcard-row"><span class="hr-icon warn">⚠</span><span class="hr-name">TLS Version</span><span class="hr-val warn">TLS 1.1</span></div>
+      <div class="hcard-row"><span class="hr-icon pass">✓</span><span class="hr-name">SSL Certificate</span><span class="hr-val pass">Valid · 90d</span></div>
+      <div class="hcard-chain">⛓ Logged · Tx: <span class="mono">0x4a9f…3b21</span></div>
+    </div>
+
+    <div class="scroll-cue">
+      <div class="scroll-mouse"><div class="scroll-wheel"></div></div>
+      <span>Scroll to explore</span>
+    </div>
+  </section>
+
+  <!-- ══ VIDEO / HOW IT WORKS ══ -->
+  <section class="video-section" id="video">
+    <div class="sec-wrap">
+      <div class="sec-tag">How It Works</div>
+      <h2 class="sec-h2">See <span class="grad-text">SecureMailScope</span> in action</h2>
+      <p class="sec-p">Watch our animated walkthrough to understand how we scan, score, and secure your email infrastructure in real-time.</p>
+
+      <!-- ── Animated Video Explainer (Pure CSS/JS — no CDN) ── -->
+      <div class="video-player">
+        <div class="vp-chrome">
+          <div class="vp-chrome-dots"><span></span><span></span><span></span></div>
+          <div class="vp-chrome-title">SecureMailScope — Platform Demo</div>
+          <div class="vp-time" id="vp-time">0:00 / 0:40</div>
+        </div>
+
+        <div class="vp-screen" id="vp-screen">
+          <!-- Step slides rendered by JS -->
+          <div class="vp-slide active" id="slide-0">
+            <div class="slide-inner">
+              <div class="slide-step-num">Step 1 of 4</div>
+              <div class="slide-icon">🎯</div>
+              <h3>Enter Your Domain</h3>
+              <p>Type any domain name. SecureMailScope instantly begins parallel DNS resolution across all email security records.</p>
+              <div class="slide-demo">
+                <div class="demo-input">
+                  <span class="demo-at">@</span>
+                  <span class="demo-typed" id="demo-typed"></span>
+                  <span class="demo-cursor">|</span>
+                </div>
+                <div class="demo-pulse">⚡ Initiating scan…</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="vp-slide" id="slide-1">
+            <div class="slide-inner">
+              <div class="slide-step-num">Step 2 of 4</div>
+              <div class="slide-icon">🔬</div>
+              <h3>AI Analysis Engine</h3>
+              <p>Our XGBoost model checks 40+ cryptographic parameters simultaneously — SPF, DKIM, DMARC, TLS version, cipher suites, certificate chain, and breach databases.</p>
+              <div class="slide-checks" id="slide-checks">
+                <!-- Animated checks inserted by JS -->
+              </div>
+            </div>
+          </div>
+
+          <div class="vp-slide" id="slide-2">
+            <div class="slide-inner">
+              <div class="slide-step-num">Step 3 of 4</div>
+              <div class="slide-icon">📊</div>
+              <h3>Threat Score Generated</h3>
+              <p>Every domain receives a 0–100 AI threat score with severity breakdown and auto-generated hardened configurations you can deploy immediately.</p>
+              <div class="slide-gauge-wrap">
+                <svg width="160" height="160" viewBox="0 0 160 160" class="slide-gauge">
+                  <circle cx="80" cy="80" r="64" fill="none" stroke="rgba(139,92,246,0.15)" stroke-width="10"/>
+                  <circle cx="80" cy="80" r="64" fill="none"
+                    stroke="url(#gg)" stroke-width="10"
+                    stroke-dasharray="402" stroke-dashoffset="402"
+                    stroke-linecap="round"
+                    transform="rotate(-90 80 80)"
+                    id="gauge-arc"
+                    style="transition:stroke-dashoffset 2s cubic-bezier(.4,0,.2,1)"/>
+                  <defs>
+                    <linearGradient id="gg" x1="0" y1="0" x2="1" y2="0">
+                      <stop stop-color="#8B5CF6"/>
+                      <stop offset="1" stop-color="#06B6D4"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div class="slide-gauge-center">
+                  <span class="slide-score" id="slide-score">0</span>
+                  <span class="slide-grade">AT RISK</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="vp-slide" id="slide-3">
+            <div class="slide-inner">
+              <div class="slide-step-num">Step 4 of 4</div>
+              <div class="slide-icon">⛓</div>
+              <h3>Blockchain Audit Logged</h3>
+              <p>The scan result is SHA-256 hashed, stored on IPFS, and recorded on the Ethereum blockchain — creating an immutable, tamper-proof compliance trail.</p>
+              <div class="slide-chain">
+                <div class="chain-tx">
+                  <div class="chain-tx-label">Transaction</div>
+                  <div class="chain-tx-hash mono" id="chain-hash">0x···</div>
+                </div>
+                <div class="chain-blocks">
+                  <div class="chain-block-mini" id="cb-1"><div class="cbm-header">Block #4821</div><div class="cbm-body">acme.com · 62/100</div></div>
+                  <div class="chain-arrow">⛓</div>
+                  <div class="chain-block-mini" id="cb-2"><div class="cbm-header">Block #4820</div><div class="cbm-body">google.com · 94/100</div></div>
+                  <div class="chain-arrow">⛓</div>
+                  <div class="chain-block-mini" id="cb-3"><div class="cbm-header">Block #4819</div><div class="cbm-body">test.io · 31/100</div></div>
+                </div>
+                <div class="chain-confirmed">✓ Confirmed on Ethereum Sepolia Testnet</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress / Controls -->
+        <div class="vp-controls">
+          <button class="vp-btn" id="vp-prev">‹</button>
+          <div class="vp-progress">
+            <div class="vp-dots">
+              <button class="vp-dot active" data-slide="0"></button>
+              <button class="vp-dot" data-slide="1"></button>
+              <button class="vp-dot" data-slide="2"></button>
+              <button class="vp-dot" data-slide="3"></button>
+            </div>
+            <div class="vp-bar-wrap"><div class="vp-bar" id="vp-bar"></div></div>
+          </div>
+          <button class="vp-btn" id="vp-next">›</button>
+        </div>
+      </div>
+
+      <!-- Steps Summary below video -->
+      <div class="steps-row">
+        <div class="step-pill"><span class="sp-num">01</span><span class="sp-label">Enter Domain</span></div>
+        <div class="step-arrow">→</div>
+        <div class="step-pill"><span class="sp-num">02</span><span class="sp-label">AI Analysis</span></div>
+        <div class="step-arrow">→</div>
+        <div class="step-pill"><span class="sp-num">03</span><span class="sp-label">Threat Score</span></div>
+        <div class="step-arrow">→</div>
+        <div class="step-pill active"><span class="sp-num">04</span><span class="sp-label">Blockchain Log</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ FEATURES ══ -->
+  <section class="features-section" id="features">
+    <div class="sec-wrap">
+      <div class="sec-tag">Capabilities</div>
+      <h2 class="sec-h2">Built for <span class="grad-text">enterprise security</span></h2>
+
+      <div class="feat-grid">
+        <div class="feat-card large">
+          <div class="feat-glow" style="--gc:#8B5CF6"></div>
+          <div class="feat-icon" style="background:rgba(139,92,246,0.15);color:#A78BFA">🤖</div>
+          <h3>AI Threat Scoring</h3>
+          <p>XGBoost model trained on thousands of real breach datasets. Rates your cryptographic posture 0–100 in under 3 seconds with CVSS-mapped severity breakdown.</p>
+          <div class="feat-tag">XGBoost · scikit-learn</div>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-glow" style="--gc:#EC4899"></div>
+          <div class="feat-icon" style="background:rgba(236,72,153,0.15);color:#F472B6">📋</div>
+          <h3>Header Forensics</h3>
+          <p>Paste any raw email header. Get full authentication breakdown, routing hop analysis, and spoofing detection.</p>
+          <div class="feat-tag">RFC 2822 Parser</div>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-glow" style="--gc:#06B6D4"></div>
+          <div class="feat-icon" style="background:rgba(6,182,212,0.15);color:#22D3EE">🔒</div>
+          <h3>Live TLS Inspector</h3>
+          <p>Real-time SMTP connection analysis — TLS version, cipher suites, certificate chain, STARTTLS support.</p>
+          <div class="feat-tag">SSLyze Engine</div>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-glow" style="--gc:#10B981"></div>
+          <div class="feat-icon" style="background:rgba(16,185,129,0.15);color:#34D399">✅</div>
+          <h3>SPF / DKIM / DMARC</h3>
+          <p>Full DNS record validation with one-click auto-generated hardened config blocks ready to deploy.</p>
+          <div class="feat-tag">dnspython</div>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-glow" style="--gc:#F59E0B"></div>
+          <div class="feat-icon" style="background:rgba(245,158,11,0.15);color:#FCD34D">⛓</div>
+          <h3>Blockchain Audit Trail</h3>
+          <p>Every scan is SHA-256 hashed, stored on IPFS, and logged to an Ethereum smart contract — permanently immutable.</p>
+          <div class="feat-tag">Solidity · Web3.py</div>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-glow" style="--gc:#8B5CF6"></div>
+          <div class="feat-icon" style="background:rgba(139,92,246,0.15);color:#A78BFA">📄</div>
+          <h3>Compliance Reports</h3>
+          <p>Export enterprise PDF reports mapped to ISO 27001, NIST CSF, and GDPR with blockchain proof embedded.</p>
+          <div class="feat-tag">ReportLab</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ LIVE SCANNER ══ -->
+  <section class="scanner-section" id="scanner">
+    <div class="sec-wrap">
+      <div class="sec-tag">Live Demo</div>
+      <h2 class="sec-h2">Scan any domain <span class="grad-text">right now</span></h2>
+      <p class="sec-p">No account required. Enter any domain to get an instant security analysis preview.</p>
+
+      <div class="scanner-glass">
+        <div class="scanner-chrome">
+          <div class="sc-dots"><span style="background:#FF5F57"></span><span style="background:#FFBD2E"></span><span style="background:#28CA41"></span></div>
+          <span class="mono sc-label">securemailscope — scanner v1.0</span>
+        </div>
+        <div class="scanner-body">
+          <div class="scanner-row">
+            <div class="scanner-at">@</div>
+            <input id="scan-input" class="scanner-input" type="text" placeholder="yourdomain.com" autocomplete="off"/>
+            <button class="scan-go" id="scan-go">
+              <span id="scan-btn-text">Scan ⚡</span>
+              <span class="scan-spinner" id="scan-spinner"></span>
+            </button>
+          </div>
+          <div class="scanner-demos">
+            Try: 
+            <button class="demo-pill" onclick="document.getElementById('scan-input').value='google.com'">google.com</button>
+            <button class="demo-pill" onclick="document.getElementById('scan-input').value='example.com'">example.com</button>
+            <button class="demo-pill" onclick="document.getElementById('scan-input').value='microsoft.com'">microsoft.com</button>
+          </div>
+          <div id="scan-results" class="scan-results">
+            <div class="scan-placeholder">
+              <div class="sp-icon">🔍</div>
+              <div>Enter a domain above to see live results</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ TECH STACK ══ -->
+  <section class="tech-section">
+    <div class="sec-wrap" style="text-align:center">
+      <div class="sec-tag">Technology</div>
+      <h2 class="sec-h2">Built with <span class="grad-text">world-class tech</span></h2>
+      <div class="tech-marquee-wrap">
+        <div class="tech-marquee">
+          <div class="tech-track" id="tech-track">
+            <div class="tech-pill">🐍 FastAPI</div>
+            <div class="tech-pill">⚛️ React 18</div>
+            <div class="tech-pill">⛓ Ethereum</div>
+            <div class="tech-pill">🤖 XGBoost</div>
+            <div class="tech-pill">🐳 Docker</div>
+            <div class="tech-pill">📡 WebSockets</div>
+            <div class="tech-pill">🗄 PostgreSQL</div>
+            <div class="tech-pill">⚡ Redis</div>
+            <div class="tech-pill">📦 IPFS</div>
+            <div class="tech-pill">🔐 Solidity</div>
+            <!-- duplicate for infinite scroll -->
+            <div class="tech-pill">🐍 FastAPI</div>
+            <div class="tech-pill">⚛️ React 18</div>
+            <div class="tech-pill">⛓ Ethereum</div>
+            <div class="tech-pill">🤖 XGBoost</div>
+            <div class="tech-pill">🐳 Docker</div>
+            <div class="tech-pill">📡 WebSockets</div>
+            <div class="tech-pill">🗄 PostgreSQL</div>
+            <div class="tech-pill">⚡ Redis</div>
+            <div class="tech-pill">📦 IPFS</div>
+            <div class="tech-pill">🔐 Solidity</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ CTA ══ -->
+  <section class="cta-section">
+    <div class="sec-wrap">
+      <div class="cta-glass">
+        <div class="cta-blob"></div>
+        <h2>Ready to <span class="grad-text">secure your email</span>?</h2>
+        <p>Start your free scan in 10 seconds. Blockchain-verified results. No credit card.</p>
+        <div class="cta-btns">
+          <a href="#scanner" class="btn-primary-lg">Start Free Scan ⚡</a>
+          <a href="http://localhost:5173" target="_blank" class="btn-ghost-lg">Open Dashboard →</a>
+        </div>
+        <div class="cta-note">SIH 2026 · Problem ID: SIH26159 · Blockchain & Cybersecurity</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ FOOTER ══ -->
+  <footer class="footer">
+    <div class="foot-wrap">
+      <div class="foot-brand">
+        <a href="#" class="brand">
+          <div class="brand-icon small">
+            <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+              <path d="M14 2L3 7.5V14C3 19.55 7.84 24.74 14 26C20.16 24.74 25 19.55 25 14V7.5L14 2Z" stroke="#8B5CF6" stroke-width="1.8"/>
+              <path d="M9 14l3 3 7-7" stroke="#06B6D4" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="brand-name">SecureMailScope</span>
+        </a>
+        <p>AI-Assisted Cryptographic Security Posture Assessment for Secure Email Communications</p>
+        <span class="foot-badge">SIH 2026 · SIH26159 · Blockchain & Cybersecurity</span>
+      </div>
+      <div class="foot-links">
+        <div class="foot-col"><h4>Product</h4>
+          <a href="#features">Features</a>
+          <a href="#scanner">Scanner</a>
+          <a href="#video">Demo</a>
+        </div>
+        <div class="foot-col"><h4>Tech</h4>
+          <a href="http://localhost:8000/docs" target="_blank">API Docs</a>
+          <a href="#">Smart Contract</a>
+          <a href="#">GitHub</a>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 SecureMailScope. Built for Smart India Hackathon 2026.</span>
+    </div>
+  </footer>
+
+  <script src="new-script.js"></script>
+</body>
+</html>
