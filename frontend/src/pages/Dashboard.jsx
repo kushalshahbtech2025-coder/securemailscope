@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   LineChart, Line, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell
@@ -8,6 +9,7 @@ import {
   getScoreColor, getStatusDot, getStatusIcon, getSeverityClass
 } from '../data/mockData.js';
 import { getBlockchainLogs } from '../data/api.js';
+import { soundManager } from '../data/sound.js';
 
 /* ── Animated SVG Gauge ── */
 function ScoreGauge({ score }) {
@@ -129,6 +131,7 @@ function StatCard({ label, value, unit, color, icon, sub, delay }) {
 
 /* ── Dashboard Page ── */
 export default function Dashboard({ apiOnline }) {
+  const navigate = useNavigate();
   const data = DEFAULT_SCAN;
   const [logs, setLogs] = useState(AUDIT_LOGS);
 
@@ -138,6 +141,42 @@ export default function Dashboard({ apiOnline }) {
 
   return (
     <div className="animate-fade">
+      {/* Cyber Threat Brainstorm Alert Banner */}
+      <div style={{
+        marginBottom: '1.25rem', padding: '1rem 1.35rem',
+        background: 'linear-gradient(135deg, rgba(0,229,255,0.08) 0%, rgba(157,78,221,0.14) 100%)',
+        border: '1px solid rgba(0,229,255,0.28)', borderRadius: '12px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.85rem',
+        boxShadow: '0 4px 24px rgba(0,229,255,0.07)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <span style={{ fontSize: '1.5rem', animation: 'spin 12s linear infinite', display: 'inline-block' }}>🧠</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '0.94rem', color: '#FFF', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              Cybersecurity Brainstorm & Threat Matrix
+              <span className="tag tag-cyan" style={{ fontSize: '0.65rem' }}>AI LAB</span>
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+              Synthesizing 4 active email attack vectors: DKIM Replay, BGP DNS Route Hijack & Subdomain Takeover.
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={() => {
+            soundManager.playClick();
+            navigate('/dashboard/brainstorm');
+          }}
+          className="btn btn-primary"
+          style={{
+            fontSize: '0.82rem', padding: '0.45rem 1rem',
+            background: 'linear-gradient(135deg, #00FF9D 0%, #00E5FF 100%)',
+            color: '#020713', fontWeight: 800, border: 'none'
+          }}
+        >
+          Launch Threat Brainstormer ↗
+        </button>
+      </div>
+
       {/* API mode banner */}
       {!apiOnline && (
         <div style={{
