@@ -9,6 +9,7 @@ import CyberBrainstorm from './pages/CyberBrainstorm.jsx';
 import HeaderAnalysis from './pages/HeaderAnalysis.jsx';
 import AuditLog       from './pages/AuditLog.jsx';
 import Reports        from './pages/Reports.jsx';
+import CyberWorkspace from './pages/CyberWorkspace.jsx';
 import GlobalDefenseTicker from './components/GlobalDefenseTicker.jsx';
 import { soundManager } from './data/sound.js';
 
@@ -16,6 +17,7 @@ const NAV_ITEMS = [
   { path:'/dashboard',            label:'Dashboard',        icon:'◈', end:true  },
   { path:'/dashboard/scanner',    label:'Domain Scanner',   icon:'⟳', end:false },
   { path:'/dashboard/brainstorm', label:'Threat Brainstorm',icon:'🧠', end:false },
+  { path:'/dashboard/workspace',  label:'SOC Runbook',      icon:'📓', end:false },
   { path:'/dashboard/headers',    label:'Header Forensics', icon:'≡', end:false },
   { path:'/dashboard/audit',      label:'Blockchain Audit', icon:'⛓', end:false },
   { path:'/dashboard/reports',    label:'Reports',          icon:'↓', end:false },
@@ -25,6 +27,7 @@ const PAGE_META = {
   '/dashboard':           { title:'Dashboard',             crumb:'Security Overview'     },
   '/dashboard/scanner':   { title:'Domain Scanner',        crumb:'Run Security Scan'     },
   '/dashboard/brainstorm':{ title:'Cyber Threat Brainstorm',crumb:'AI Neural Attack Matrix' },
+  '/dashboard/workspace': { title:'SOC Interactive Runbook',crumb:'Notion-Style Cyber Workspace' },
   '/dashboard/headers':   { title:'Header Forensics',      crumb:'Email Header Analysis' },
   '/dashboard/audit':     { title:'Blockchain Audit',      crumb:'Immutable Scan Ledger' },
   '/dashboard/reports':   { title:'Reports',               crumb:'Compliance & Export'   },
@@ -251,6 +254,7 @@ function AppShell() {
                 <Route index element={<Dashboard apiOnline={apiOnline}/>}/>
                 <Route path="scanner" element={<Scanner apiOnline={apiOnline}/>}/>
                 <Route path="brainstorm" element={<CyberBrainstorm/>}/>
+                <Route path="workspace" element={<CyberWorkspace/>}/>
                 <Route path="headers" element={<HeaderAnalysis/>}/>
                 <Route path="audit" element={<AuditLog apiOnline={apiOnline}/>}/>
                 <Route path="reports" element={<Reports/>}/>

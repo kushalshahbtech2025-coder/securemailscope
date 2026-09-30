@@ -265,7 +265,16 @@ export default function Landing() {
             <a href="#scanner">Try It</a>
           </div>
           <div className="land-nav-ctas">
-            <a href="#video" className="lnc-ghost">Watch Demo</a>
+            <button
+              onClick={() => {
+                soundManager.playClick();
+                navigate('/dashboard/workspace');
+              }}
+              className="lnc-ghost"
+              style={{ border: '1px solid rgba(0, 245, 255, 0.35)', color: '#00F5FF', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+            >
+              <span>📓</span> Runbook
+            </button>
             <button className="lnc-primary" onClick={() => navigate('/dashboard')}>
               Launch App →
             </button>
