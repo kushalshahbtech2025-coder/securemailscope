@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import Landing        from './pages/Landing.jsx';
 import Dashboard      from './pages/Dashboard.jsx';
@@ -7,6 +8,7 @@ import Scanner        from './pages/Scanner.jsx';
 import HeaderAnalysis from './pages/HeaderAnalysis.jsx';
 import AuditLog       from './pages/AuditLog.jsx';
 import Reports        from './pages/Reports.jsx';
+import { soundManager } from './data/sound.js';
 
 const NAV_ITEMS = [
   { path:'/dashboard',            label:'Dashboard',        icon:'◈', end:true  },
@@ -26,18 +28,37 @@ const PAGE_META = {
 
 /* ── Sidebar ── */
 function Sidebar({ collapsed, setCollapsed }) {
-  const loc = useLocation();
   return (
-    <aside className="sidebar" style={{ width: collapsed ? 64 : 'var(--sidebar-w)', transition:'width 0.3s ease', overflow:'hidden' }}>
+    <aside
+      className="sidebar"
+      style={{
+        width: collapsed ? 68 : 'var(--sidebar-w)',
+        transition: 'width 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+        overflow: 'hidden'
+      }}
+    >
       <div className="sidebar-logo" style={{ justifyContent: collapsed ? 'center' : 'flex-start', gap: collapsed ? 0 : undefined }}>
-        <div className="logo-mark" style={{ flexShrink:0, cursor:'pointer' }} onClick={() => setCollapsed(c => !c)} title={collapsed ? 'Expand' : 'Collapse'}>
-          <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
-            <path d="M14 2L3 7.5V14C3 19.55 7.84 24.74 14 26C20.16 24.74 25 19.55 25 14V7.5L14 2Z"
-              stroke="url(#sbg)" strokeWidth="1.5" fill="rgba(109,40,217,0.08)"/>
-            <path d="M9 14l3 3 7-7" stroke="#34D399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <div
+          className="logo-mark"
+          style={{ flexShrink: 0, cursor: 'pointer', transition: 'transform 0.2s' }}
+          onClick={() => {
+            soundManager.playClick();
+            setCollapsed(c => !c);
+          }}
+          title={collapsed ? 'Expand' : 'Collapse'}
+        >
+          <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+            <path
+              d="M14 2L3 7.5V14C3 19.55 7.84 24.74 14 26C20.16 24.74 25 19.55 25 14V7.5L14 2Z"
+              stroke="url(#sbg)"
+              strokeWidth="1.8"
+              fill="rgba(109,40,217,0.12)"
+            />
+            <path d="M9 14l3 3 7-7" stroke="#34D399" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
             <defs>
               <linearGradient id="sbg" x1="3" y1="2" x2="25" y2="26">
-                <stop stopColor="#6D28D9"/><stop offset="1" stopColor="#059669"/>
+                <stop stopColor="#8B5CF6"/>
+                <stop offset="1" stopColor="#06B6D4"/>
               </linearGradient>
             </defs>
           </svg>
@@ -45,7 +66,7 @@ function Sidebar({ collapsed, setCollapsed }) {
         {!collapsed && (
           <div className="logo-text">
             SecureMailScope
-            <div className="logo-sub">AI Email Security</div>
+            <div className="logo-sub">AI Cryptographic Posture</div>
           </div>
         )}
       </div>
@@ -53,25 +74,41 @@ function Sidebar({ collapsed, setCollapsed }) {
       <nav className="sidebar-nav">
         {!collapsed && <div className="nav-section-title">Navigation</div>}
         {NAV_ITEMS.map(item => (
-          <NavLink key={item.path} to={item.path} end={item.end}
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end={item.end}
+            onClick={() => soundManager.playClick()}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             title={collapsed ? item.label : undefined}
-            style={{ justifyContent: collapsed ? 'center' : undefined, padding: collapsed ? '0.7rem' : undefined }}>
-            <span style={{ fontSize:'1.1rem', flexShrink:0 }}>{item.icon}</span>
-            {!collapsed && item.label}
+            style={{
+              justifyContent: collapsed ? 'center' : undefined,
+              padding: collapsed ? '0.75rem 0.5rem' : undefined,
+              transition: 'all 0.18s ease'
+            }}
+          >
+            <span style={{ fontSize: '1.15rem', flexShrink: 0 }}>{item.icon}</span>
+            {!collapsed && <span>{item.label}</span>}
           </NavLink>
         ))}
 
         {!collapsed && (
           <>
-            <div className="nav-section-title" style={{ marginTop:'1rem' }}>Links</div>
-            <NavLink to="/" className="nav-item">
-              <span style={{ fontSize:'1rem' }}>↩</span>
-              Landing Page
+            <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>External Links</div>
+            <NavLink to="/" onClick={() => soundManager.playClick()} className="nav-item">
+              <span style={{ fontSize: '1rem' }}>↩</span>
+              Landing Portal
             </NavLink>
-            <button className="nav-item" onClick={() => window.open('http://127.0.0.1:8000/docs','_blank')}>
-              <span style={{ fontSize:'1rem' }}>📖</span>
-              API Docs
+            <button
+              className="nav-item"
+              onClick={() => {
+                soundManager.playClick();
+                window.open('http://127.0.0.1:8000/docs', '_blank');
+              }}
+              style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none' }}
+            >
+              <span style={{ fontSize: '1rem' }}>📖</span>
+              Interactive API Docs
             </button>
           </>
         )}
@@ -79,11 +116,11 @@ function Sidebar({ collapsed, setCollapsed }) {
 
       {!collapsed && (
         <div className="sidebar-footer">
-          <div className="user-card">
+          <div className="user-card" style={{ transition: 'background 0.2s' }}>
             <div className="user-avatar">SIH</div>
             <div>
-              <div className="user-name">Team Secure</div>
-              <div className="user-role">SIH 2026 · Admin</div>
+              <div className="user-name">Team SecureScope</div>
+              <div className="user-role">SIH 2026 · Admin Node</div>
             </div>
           </div>
         </div>
@@ -92,10 +129,18 @@ function Sidebar({ collapsed, setCollapsed }) {
   );
 }
 
-/* ── Topbar ── */
+/* ── Topbar with Cyber Sound Toggle ── */
 function Topbar({ apiOnline }) {
-  const loc  = useLocation();
+  const loc = useLocation();
   const meta = PAGE_META[loc.pathname] || PAGE_META['/dashboard'];
+  const [muted, setMuted] = useState(soundManager.getMuted());
+
+  const handleToggleSound = () => {
+    const next = soundManager.toggleMute();
+    setMuted(next);
+    if (!next) soundManager.playClick();
+  };
+
   return (
     <header className="topbar">
       <div className="topbar-left">
@@ -103,13 +148,52 @@ function Topbar({ apiOnline }) {
         <span className="page-crumb">SecureMailScope · {meta.crumb}</span>
       </div>
       <div className="topbar-right">
-        <div className={`status-pill ${apiOnline ? '' : 'warn'}`}
-          style={apiOnline ? {} : { background:'rgba(245,158,11,0.08)', borderColor:'rgba(245,158,11,0.2)', color:'var(--accent-amber)' }}>
-          <div className="status-dot" style={apiOnline ? {} : { background:'var(--accent-amber)' }}/>
-          {apiOnline ? 'API Online' : 'Demo Mode'}
+        {/* Sound toggle button */}
+        <button
+          onClick={handleToggleSound}
+          className="topbar-btn"
+          title={muted ? 'Enable Cyber Sound Effects' : 'Mute UI Sounds'}
+          style={{ fontSize: '1rem', border: '1px solid var(--border)' }}
+        >
+          {muted ? '🔇' : '🔊'}
+        </button>
+
+        {/* API connection status pill */}
+        <div
+          className={`status-pill ${apiOnline ? '' : 'warn'}`}
+          style={apiOnline ? {} : { background: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.25)', color: 'var(--accent-amber)' }}
+        >
+          <div
+            className="status-dot"
+            style={apiOnline ? { boxShadow: '0 0 8px #10B981' } : { background: 'var(--accent-amber)', boxShadow: '0 0 8px #F59E0B' }}
+          />
+          {apiOnline ? 'API Connected' : 'Simulated Node'}
         </div>
-        <button className="topbar-btn" onClick={() => window.open('http://127.0.0.1:8000/docs','_blank')} title="API Docs">📖</button>
-        <NavLink to="/" className="btn btn-outline" style={{ padding:'0.4rem 1rem', fontSize:'0.8rem', textDecoration:'none', display:'inline-flex', alignItems:'center', gap:'0.35rem' }}>
+
+        <button
+          className="topbar-btn"
+          onClick={() => {
+            soundManager.playClick();
+            window.open('http://127.0.0.1:8000/docs', '_blank');
+          }}
+          title="FastAPI Swagger Documentation"
+        >
+          📖
+        </button>
+
+        <NavLink
+          to="/"
+          onClick={() => soundManager.playClick()}
+          className="btn btn-outline"
+          style={{
+            padding: '0.4rem 0.9rem',
+            fontSize: '0.8rem',
+            textDecoration: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem'
+          }}
+        >
           ↩ Landing
         </NavLink>
       </div>
@@ -117,37 +201,56 @@ function Topbar({ apiOnline }) {
   );
 }
 
-/* ── App Shell (wraps all dashboard routes) ── */
+/* ── Animated App Shell with Page Transitions ── */
 function AppShell() {
-  const [collapsed,  setCollapsed]  = useState(false);
-  const [apiOnline,  setApiOnline]  = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [apiOnline, setApiOnline] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     async function ping() {
       try {
         const r = await fetch('http://127.0.0.1:8000/health', { signal: AbortSignal.timeout(2000) });
         setApiOnline(r.ok);
-      } catch { setApiOnline(false); }
+      } catch {
+        setApiOnline(false);
+      }
     }
     ping();
-    const id = setInterval(ping, 10000);
+    const id = setInterval(ping, 12000);
     return () => clearInterval(id);
   }, []);
 
   return (
     <div className="app-layout">
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed}/>
-      <div className="main-content" style={{ marginLeft: collapsed ? 64 : 'var(--sidebar-w)', transition:'margin-left 0.3s ease' }}>
+      <div
+        className="main-content"
+        style={{
+          marginLeft: collapsed ? 68 : 'var(--sidebar-w)',
+          transition: 'margin-left 0.28s cubic-bezier(0.16, 1, 0.3, 1)'
+        }}
+      >
         <Topbar apiOnline={apiOnline}/>
         <main className="page-content">
-          <Routes>
-            <Route index                  element={<Dashboard      apiOnline={apiOnline}/>}/>
-            <Route path="scanner"         element={<Scanner        apiOnline={apiOnline}/>}/>
-            <Route path="headers"         element={<HeaderAnalysis/>}/>
-            <Route path="audit"           element={<AuditLog       apiOnline={apiOnline}/>}/>
-            <Route path="reports"         element={<Reports/>}/>
-            <Route path="*"               element={<Navigate to="/dashboard" replace/>}/>
-          </Routes>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <Routes location={location}>
+                <Route index element={<Dashboard apiOnline={apiOnline}/>}/>
+                <Route path="scanner" element={<Scanner apiOnline={apiOnline}/>}/>
+                <Route path="headers" element={<HeaderAnalysis/>}/>
+                <Route path="audit" element={<AuditLog apiOnline={apiOnline}/>}/>
+                <Route path="reports" element={<Reports/>}/>
+                <Route path="*" element={<Navigate to="/dashboard" replace/>}/>
+              </Routes>
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>
@@ -159,13 +262,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Landing page = first page at / */}
         <Route path="/" element={<Landing/>}/>
-
-        {/* Dashboard shell at /dashboard/* */}
         <Route path="/dashboard/*" element={<AppShell/>}/>
-
-        {/* Catch-all → landing */}
         <Route path="*" element={<Navigate to="/" replace/>}/>
       </Routes>
 
@@ -174,15 +272,16 @@ export default function App() {
         toastOptions={{
           duration: 3500,
           style: {
-            background:'#18181B',
-            color:'#FAFAFA',
-            border:'1px solid rgba(255,255,255,0.08)',
-            fontFamily:'Inter, system-ui, sans-serif',
-            fontSize:'0.875rem',
-            borderRadius:'10px',
+            background: '#0D0028',
+            color: '#F0EEFF',
+            border: '1px solid rgba(139,92,246,0.3)',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.6)',
+            fontFamily: 'Inter, system-ui, sans-serif',
+            fontSize: '0.85rem',
+            borderRadius: '12px',
           },
-          success:{ iconTheme:{ primary:'#34D399', secondary:'#09090B' } },
-          error:  { iconTheme:{ primary:'#F87171', secondary:'#09090B' } },
+          success: { iconTheme: { primary: '#10B981', secondary: '#08001F' } },
+          error:   { iconTheme: { primary: '#EF4444', secondary: '#08001F' } },
         }}
       />
     </BrowserRouter>
