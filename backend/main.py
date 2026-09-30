@@ -81,7 +81,7 @@ async def generate_gemini_analysis(prompt: str, fallback_text: str = "") -> dict
         "generationConfig": {"temperature": 0.3, "maxOutputTokens": 600}
     }
 
-    async with httpx.AsyncClient(timeout=8.0) as client:
+    async with httpx.AsyncClient(timeout=25.0) as client:
         for model in candidate_models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
             try:
