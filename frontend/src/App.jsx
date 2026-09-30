@@ -250,7 +250,7 @@ function AppShell() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
             >
-              <Routes location={location}>
+              <Routes>
                 <Route index element={<Dashboard apiOnline={apiOnline}/>}/>
                 <Route path="scanner" element={<Scanner apiOnline={apiOnline}/>}/>
                 <Route path="brainstorm" element={<CyberBrainstorm/>}/>
