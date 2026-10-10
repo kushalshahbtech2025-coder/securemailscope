@@ -26,3 +26,15 @@ env/
 
 # Deployments
 .vercel
+
+# Temporary / Scratch
+*.bak
+*.dump
+autogov_dump.txt
+runs_formatting.txt
+pdf_extracted/
+presentation_exported_pages/
+pptx_images/
+theme-*/
+test_img.pptx
+slide1_cyber_lock.png

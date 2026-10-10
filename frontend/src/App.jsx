@@ -1,268 +1,369 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Toaster } from 'react-hot-toast';
-import Landing        from './pages/Landing.jsx';
-import Dashboard      from './pages/Dashboard.jsx';
-import Scanner        from './pages/Scanner.jsx';
-import CyberBrainstorm from './pages/CyberBrainstorm.jsx';
-import HeaderAnalysis from './pages/HeaderAnalysis.jsx';
-import AuditLog       from './pages/AuditLog.jsx';
-import Reports        from './pages/Reports.jsx';
-import CyberWorkspace from './pages/CyberWorkspace.jsx';
-import GlobalDefenseTicker from './components/GlobalDefenseTicker.jsx';
-import { soundManager } from './data/sound.js';
+import { useState, useEffect, useCallback } from "react";
+import { BrowserRouter, Routes, Route, NavLink, useLocation, Navigate } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
+import { Toaster, toast } from "react-hot-toast";
+import {
+  LayoutDashboard, ScanSearch, Mail, BookOpen, FileText,
+  Settings, ChevronLeft, ChevronRight, Search, Bell, ExternalLink,
+  Command, X, Shield, Zap, Activity
+} from "lucide-react";
+import Overview        from "./pages/Overview.jsx";
+import Scanner         from "./pages/Scanner.jsx";
+import HeaderForensics from "./pages/HeaderForensics.jsx";
+import AuditLog        from "./pages/AuditLog.jsx";
+import Reports         from "./pages/Reports.jsx";
+import Landing         from "./pages/Landing.jsx";
+import { MOCK_NOTIFICATIONS } from "./data/mock.js";
 
-const NAV_ITEMS = [
-  { path:'/dashboard',            label:'Dashboard',        icon:'◈', end:true  },
-  { path:'/dashboard/scanner',    label:'Domain Scanner',   icon:'⟳', end:false },
-  { path:'/dashboard/brainstorm', label:'Threat Brainstorm',icon:'🧠', end:false },
-  { path:'/dashboard/workspace',  label:'SOC Runbook',      icon:'📓', end:false },
-  { path:'/dashboard/headers',    label:'Header Forensics', icon:'≡', end:false },
-  { path:'/dashboard/audit',      label:'Blockchain Audit', icon:'⛓', end:false },
-  { path:'/dashboard/reports',    label:'Reports',          icon:'↓', end:false },
+const NAV = [
+  { path:"/overview",  label:"Overview",         Icon:LayoutDashboard, end:true  },
+  { path:"/scanner",   label:"Domain Scanner",   Icon:ScanSearch,      end:false },
+  { path:"/forensics", label:"Header Forensics", Icon:Mail,            end:false },
+  { path:"/ledger",    label:"Audit Ledger",     Icon:BookOpen,        badge:1,  end:false },
+  { path:"/reports",   label:"Reports",          Icon:FileText,        end:false },
 ];
 
-const PAGE_META = {
-  '/dashboard':           { title:'Dashboard',             crumb:'Security Overview'     },
-  '/dashboard/scanner':   { title:'Domain Scanner',        crumb:'Run Security Scan'     },
-  '/dashboard/brainstorm':{ title:'Cyber Threat Brainstorm',crumb:'AI Neural Attack Matrix' },
-  '/dashboard/workspace': { title:'SOC Interactive Runbook',crumb:'Notion-Style Cyber Workspace' },
-  '/dashboard/headers':   { title:'Header Forensics',      crumb:'Email Header Analysis' },
-  '/dashboard/audit':     { title:'Blockchain Audit',      crumb:'Immutable Scan Ledger' },
-  '/dashboard/reports':   { title:'Reports',               crumb:'Compliance & Export'   },
-};
+const CMD_ITEMS = [
+  { label:"Landing Portal",         hint:"Portal", path:"/"         },
+  { label:"Go to Overview",         hint:"Page",   path:"/overview"  },
+  { label:"Scan a domain",          hint:"Action", path:"/scanner"   },
+  { label:"Analyze email headers",  hint:"Action", path:"/forensics" },
+  { label:"View Audit Ledger",      hint:"Page",   path:"/ledger"    },
+  { label:"Generate Report",        hint:"Page",   path:"/reports"   },
+];
 
+const TICKER_DATA = [
+  ["SPF", "pass"], ["DKIM", "pass"], ["DMARC", "warn"],
+  ["TLS", "pass"], ["SMTP", "fail"], ["DNSSEC", "warn"],
+  ["SPF", "pass"], ["DKIM", "pass"], ["DMARC", "warn"],
+  ["TLS", "pass"], ["SMTP", "fail"], ["DNSSEC", "warn"],
+];
 
-/* ── Sidebar ── */
-function Sidebar({ collapsed, setCollapsed }) {
+/* ── Brand Icon SVG ── */
+function BrandIcon() {
   return (
-    <aside
-      className="sidebar"
-      style={{
-        width: collapsed ? 68 : 'var(--sidebar-w)',
-        transition: 'width 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
-        overflow: 'hidden'
-      }}
-    >
-      <div className="sidebar-logo" style={{ justifyContent: collapsed ? 'center' : 'flex-start', gap: collapsed ? 0 : undefined }}>
-        <div
-          className="logo-mark"
-          style={{ flexShrink: 0, cursor: 'pointer', transition: 'transform 0.2s' }}
-          onClick={() => {
-            soundManager.playClick();
-            setCollapsed(c => !c);
-          }}
-          title={collapsed ? 'Expand' : 'Collapse'}
-        >
-          <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
-            <path
-              d="M14 2L3 7.5V14C3 19.55 7.84 24.74 14 26C20.16 24.74 25 19.55 25 14V7.5L14 2Z"
-              stroke="url(#sbg)"
-              strokeWidth="1.8"
-              fill="rgba(0, 245, 255, 0.12)"
-            />
-            <path d="M9 14l3 3 7-7" stroke="#00FFA3" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-            <defs>
-              <linearGradient id="sbg" x1="3" y1="2" x2="25" y2="26">
-                <stop stopColor="#00F5FF"/>
-                <stop offset="1" stopColor="#00FFA3"/>
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-        {!collapsed && (
-          <div className="logo-text">
-            SecureMailScope
-            <div className="logo-sub">AI Cryptographic Posture</div>
-          </div>
-        )}
-      </div>
-
-      <nav className="sidebar-nav">
-        {!collapsed && <div className="nav-section-title">Navigation</div>}
-        {NAV_ITEMS.map(item => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.end}
-            onClick={() => soundManager.playClick()}
-            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-            title={collapsed ? item.label : undefined}
-            style={{
-              justifyContent: collapsed ? 'center' : undefined,
-              padding: collapsed ? '0.75rem 0.5rem' : undefined,
-              transition: 'all 0.18s ease'
-            }}
-          >
-            <span style={{ fontSize: '1.15rem', flexShrink: 0 }}>{item.icon}</span>
-            {!collapsed && <span>{item.label}</span>}
-          </NavLink>
-        ))}
-
-        {!collapsed && (
-          <>
-            <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>External Links</div>
-            <NavLink to="/" onClick={() => soundManager.playClick()} className="nav-item">
-              <span style={{ fontSize: '1rem' }}>↩</span>
-              Landing Portal
-            </NavLink>
-            <button
-              className="nav-item"
-              onClick={() => {
-                soundManager.playClick();
-                window.open('http://127.0.0.1:8000/docs', '_blank');
-              }}
-              style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none' }}
-            >
-              <span style={{ fontSize: '1rem' }}>📖</span>
-              Interactive API Docs
-            </button>
-          </>
-        )}
-      </nav>
-
-      {!collapsed && (
-        <div className="sidebar-footer">
-          <div className="user-card" style={{ transition: 'background 0.2s' }}>
-            <div className="user-avatar">SIH</div>
-            <div>
-              <div className="user-name">Team SecureScope</div>
-              <div className="user-role">SIH 2026 · Admin Node</div>
-            </div>
-          </div>
-        </div>
-      )}
-    </aside>
+    <div className="brand-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7L12 2Z"
+          stroke="rgba(6,11,17,0.9)" strokeWidth="1.8" fill="none"/>
+        <path d="M8 12l3 3 5-5" stroke="rgba(6,11,17,0.95)" strokeWidth="2.2"
+          strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </div>
   );
 }
 
-/* ── Topbar with Cyber Sound Toggle ── */
-function Topbar({ apiOnline }) {
-  const loc = useLocation();
-  const meta = PAGE_META[loc.pathname] || PAGE_META['/dashboard'];
-  const [muted, setMuted] = useState(soundManager.getMuted());
-
-  const handleToggleSound = () => {
-    const next = soundManager.toggleMute();
-    setMuted(next);
-    if (!next) soundManager.playClick();
-  };
-
-  return (
-    <header className="topbar">
-      <div className="topbar-left">
-        <span className="page-title">{meta.title}</span>
-        <span className="page-crumb">SecureMailScope · {meta.crumb}</span>
-      </div>
-      <div className="topbar-right">
-        {/* Sound toggle button */}
-        <button
-          onClick={handleToggleSound}
-          className="topbar-btn"
-          title={muted ? 'Enable Cyber Sound Effects' : 'Mute UI Sounds'}
-          style={{ fontSize: '1rem', border: '1px solid var(--border)' }}
-        >
-          {muted ? '🔇' : '🔊'}
-        </button>
-
-        {/* API connection status pill */}
-        <div
-          className={`status-pill ${apiOnline ? '' : 'warn'}`}
-          style={apiOnline ? {} : { background: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.25)', color: 'var(--accent-amber)' }}
-        >
-          <div
-            className="status-dot"
-            style={apiOnline ? { boxShadow: '0 0 8px #10B981' } : { background: 'var(--accent-amber)', boxShadow: '0 0 8px #F59E0B' }}
-          />
-          {apiOnline ? 'API Connected' : 'Simulated Node'}
-        </div>
-
-        <button
-          className="topbar-btn"
-          onClick={() => {
-            soundManager.playClick();
-            window.open('http://127.0.0.1:8000/docs', '_blank');
-          }}
-          title="FastAPI Swagger Documentation"
-        >
-          📖
-        </button>
-
-        <NavLink
-          to="/"
-          onClick={() => soundManager.playClick()}
-          className="btn btn-outline"
-          style={{
-            padding: '0.4rem 0.9rem',
-            fontSize: '0.8rem',
-            textDecoration: 'none',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.35rem'
-          }}
-        >
-          ↩ Landing
-        </NavLink>
-      </div>
-    </header>
+/* ── Command Palette ── */
+function CommandPalette({ open, onClose, navigate }) {
+  const [q, setQ] = useState("");
+  const [sel, setSel] = useState(0);
+  const filtered = CMD_ITEMS.filter(i =>
+    !q || i.label.toLowerCase().includes(q.toLowerCase())
   );
-}
 
-/* ── Animated App Shell with Page Transitions ── */
-function AppShell() {
-  const [collapsed, setCollapsed] = useState(false);
-  const [apiOnline, setApiOnline] = useState(false);
-  const location = useLocation();
+  useEffect(() => { if (open) { setQ(""); setSel(0); } }, [open]);
 
   useEffect(() => {
-    async function ping() {
-      try {
-        const r = await fetch('http://127.0.0.1:8000/health', { signal: AbortSignal.timeout(2000) });
-        setApiOnline(r.ok);
-      } catch {
-        setApiOnline(false);
-      }
-    }
+    if (!open) return;
+    const onKey = e => {
+      if (e.key === "ArrowDown") { e.preventDefault(); setSel(s => Math.min(s+1, filtered.length-1)); }
+      if (e.key === "ArrowUp")   { e.preventDefault(); setSel(s => Math.max(s-1, 0)); }
+      if (e.key === "Enter" && filtered[sel]) { navigate(filtered[sel].path); onClose(); }
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, filtered, sel, navigate, onClose]);
+
+  if (!open) return null;
+  return (
+    <>
+      <div className="cmd-backdrop" onClick={onClose} />
+      <div className="cmd-panel">
+        <div className="cmd-input-row">
+          <Command size={16} style={{color:"var(--text-muted)",flexShrink:0}}/>
+          <input autoFocus className="cmd-input" placeholder="Search or jump to…"
+            value={q} onChange={e=>{setQ(e.target.value);setSel(0);}}/>
+          <button onClick={onClose} style={{color:"var(--text-muted)"}}>
+            <X size={16}/>
+          </button>
+        </div>
+        <div className="cmd-results">
+          {filtered.length === 0
+            ? <div className="empty-state" style={{padding:"1.5rem"}}><p className="empty-title">No results</p></div>
+            : <>
+              <div className="cmd-section-label">Navigation</div>
+              {filtered.map((item, i) => (
+                <div key={item.path}
+                  className={`cmd-item${i===sel?" selected":""}`}
+                  onClick={() => { navigate(item.path); onClose(); }}
+                  onMouseEnter={() => setSel(i)}
+                >
+                  <span className="cmd-item-label">{item.label}</span>
+                  <span className="cmd-item-hint">{item.hint}</span>
+                </div>
+              ))}
+            </>
+          }
+        </div>
+        <div className="cmd-footer">
+          <span style={{display:"flex",alignItems:"center",gap:4}}>
+            <kbd style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:3,padding:"1px 5px",fontSize:"0.60rem"}}>↑↓</kbd> navigate
+          </span>
+          <span style={{display:"flex",alignItems:"center",gap:4}}>
+            <kbd style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:3,padding:"1px 5px",fontSize:"0.60rem"}}>↵</kbd> select
+          </span>
+          <span style={{display:"flex",alignItems:"center",gap:4}}>
+            <kbd style={{background:"var(--bg-overlay)",border:"1px solid var(--border)",borderRadius:3,padding:"1px 5px",fontSize:"0.60rem"}}>Esc</kbd> close
+          </span>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ── Notifications Panel ── */
+function NotifPanel({ open, onClose }) {
+  const [items, setItems] = useState(MOCK_NOTIFICATIONS);
+  if (!open) return null;
+  const markRead = id => setItems(p => p.map(n => n.id===id ? {...n,read:true} : n));
+  const typeColor = t => t==="alert"?"var(--red)":t==="success"?"var(--green)":"var(--cyan)";
+  return (
+    <>
+      <div style={{position:"fixed",inset:0,zIndex:298}} onClick={onClose}/>
+      <div style={{
+        position:"fixed",top:"var(--topbar-h)",right:"1rem",width:340,
+        background:"var(--bg-elevated)",border:"1px solid var(--border)",
+        borderRadius:"var(--r-lg)",boxShadow:"var(--shadow-xl)",
+        zIndex:299,animation:"scaleIn 0.2s var(--ease-out)"
+      }}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.9rem 1rem",borderBottom:"1px solid var(--border)"}}>
+          <span style={{fontFamily:"var(--font-display)",fontWeight:700,fontSize:"0.88rem"}}>Notifications</span>
+          <button onClick={onClose} style={{color:"var(--text-muted)"}}><X size={15}/></button>
+        </div>
+        {items.map(n => (
+          <div key={n.id} onClick={()=>markRead(n.id)} style={{
+            display:"flex",gap:"0.75rem",padding:"0.75rem 1rem",
+            borderBottom:"1px solid var(--border-light)",cursor:"pointer",
+            background:n.read?"none":"rgba(0,229,255,0.025)",
+            transition:"background 0.15s"
+          }}>
+            <div style={{width:7,height:7,borderRadius:"50%",background:typeColor(n.type),marginTop:5,flexShrink:0,boxShadow:`0 0 6px ${typeColor(n.type)}`}}/>
+            <div style={{flex:1}}>
+              <div style={{fontSize:"0.82rem",color:"var(--text-primary)",lineHeight:1.4}}>{n.msg}</div>
+              <div style={{fontSize:"0.68rem",color:"var(--text-faint)",marginTop:3,fontFamily:"var(--font-mono)"}}>{n.ts}</div>
+            </div>
+            {!n.read && <div style={{width:6,height:6,background:"var(--cyan)",borderRadius:"50%",marginTop:5,flexShrink:0}}/>}
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+/* ── App Shell (inner, uses useLocation) ── */
+function AppShell() {
+  const location = useLocation();
+  const [collapsed,  setCollapsed]  = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [cmdOpen,    setCmdOpen]    = useState(false);
+  const [notifOpen,  setNotifOpen]  = useState(false);
+  const [apiOnline,  setApiOnline]  = useState(false);
+  const [, forceNav] = useState(0);
+
+  const navigate = path => { window.history.pushState({}, "", path); forceNav(n=>n+1); };
+
+  // Cmd+K shortcut
+  useEffect(() => {
+    const onKey = e => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setCmdOpen(o => !o); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // API health
+  useEffect(() => {
+    const ping = async () => {
+      try { const r = await fetch("/health", {signal:AbortSignal.timeout(2000)}); setApiOnline(r.ok); }
+      catch { setApiOnline(false); }
+    };
     ping();
-    const id = setInterval(ping, 12000);
+    const id = setInterval(ping, 15000);
     return () => clearInterval(id);
   }, []);
 
+  const unread = MOCK_NOTIFICATIONS.filter(n => !n.read).length;
+
+  // Breadcrumb from path
+  const crumb = {
+    "/overview":  "Overview",
+    "/scanner":   "Domain Scanner",
+    "/forensics": "Header Forensics",
+    "/ledger":    "Audit Ledger",
+    "/reports":   "Reports",
+  }[location.pathname] || "Overview";
+
+  const pageVariants = {
+    initial: { opacity:0, y:12 },
+    animate: { opacity:1, y:0, transition:{ duration:0.30, ease:[0.16,1,0.3,1] } },
+    exit:    { opacity:0, y:-8, transition:{ duration:0.18 } },
+  };
+
   return (
-    <div className="app-layout">
-      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed}/>
-      <div
-        className="main-content"
-        style={{
-          marginLeft: collapsed ? 68 : 'var(--sidebar-w)',
-          transition: 'margin-left 0.28s cubic-bezier(0.16, 1, 0.3, 1)'
-        }}
-      >
-        <GlobalDefenseTicker />
-        <Topbar apiOnline={apiOnline}/>
-        <main className="page-content">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+    <div className="app">
+      {/* Overlay for mobile */}
+      {mobileOpen && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:199,backdropFilter:"blur(4px)"}}
+          onClick={()=>setMobileOpen(false)}/>
+      )}
+
+      {/* ── Sidebar ── */}
+      <aside className={`sidebar${collapsed?" collapsed":""}${mobileOpen?" mobile-open":""}`}>
+        {/* Brand */}
+        <NavLink to="/" className="sidebar-brand" style={{textDecoration:"none",display:"flex",alignItems:"center",gap:"var(--s3)"}} title="Go to Landing Portal">
+          <BrandIcon/>
+          <div style={{overflow:"hidden"}}>
+            <div className="brand-name">Signal Vault</div>
+            <div className="brand-tag">SecureMailScope</div>
+          </div>
+        </NavLink>
+
+        {/* Nav */}
+        <nav className="sidebar-nav">
+          <div className="nav-section">Platform</div>
+          {NAV.slice(0,5).map(({path,label,Icon,badge,end}) => (
+            <NavLink key={path} to={path} end={end}
+              className={({isActive})=>`nav-item${isActive?" active":""}`}
+              onClick={()=>setMobileOpen(false)}
             >
-              <Routes>
-                <Route index element={<Dashboard apiOnline={apiOnline}/>}/>
-                <Route path="scanner" element={<Scanner apiOnline={apiOnline}/>}/>
-                <Route path="brainstorm" element={<CyberBrainstorm/>}/>
-                <Route path="workspace" element={<CyberWorkspace/>}/>
-                <Route path="headers" element={<HeaderAnalysis/>}/>
-                <Route path="audit" element={<AuditLog apiOnline={apiOnline}/>}/>
-                <Route path="reports" element={<Reports/>}/>
-                <Route path="*" element={<Navigate to="/dashboard" replace/>}/>
-              </Routes>
+              <Icon className="nav-icon" size={15} strokeWidth={1.8}/>
+              <span className="nav-label">{label}</span>
+              {badge && <span className="nav-badge">{badge}</span>}
+            </NavLink>
+          ))}
+
+          <div className="nav-section">Portal</div>
+          <NavLink to="/" className="nav-item" title="Landing Page" onClick={()=>setMobileOpen(false)}>
+            <Shield className="nav-icon" size={15} strokeWidth={1.8}/>
+            <span className="nav-label">Landing Portal</span>
+          </NavLink>
+        </nav>
+
+        {/* Footer */}
+        <div className="sidebar-footer">
+          <button
+            className="sidebar-toggle-btn"
+            onClick={()=>setCollapsed(c=>!c)}
+            style={{cursor:"pointer"}}
+          >
+            {collapsed
+              ? <ChevronRight size={14} style={{color:"var(--text-muted)"}}/>
+              : <ChevronLeft  size={14} style={{color:"var(--text-muted)"}}/>
+            }
+            <span className="nav-label" style={{fontSize:"0.76rem",color:"var(--text-muted)"}}>
+              {collapsed?"Expand":"Collapse"}
+            </span>
+          </button>
+          <div className="user-row">
+            <div className="user-avatar">SV</div>
+            <div className="user-info">
+              <div className="user-name">Signal Vault</div>
+              <div className="user-role">workspace · admin</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* ── Main ── */}
+      <div className={`main${collapsed?" sidebar-collapsed":""}`}>
+
+        {/* Intelligence ticker */}
+        <div className="ticker-bar">
+          <div className="ticker-track">
+            {[...TICKER_DATA, ...TICKER_DATA].map(([label, status], i) => (
+              <span key={i} className="ticker-item">
+                <span className="ticker-label">{label}</span>
+                <span className={status==="pass"?"ticker-pass":status==="fail"?"ticker-fail":"ticker-warn"}>
+                  {status.toUpperCase()}
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Topbar ── */}
+        <header className="topbar">
+          <div className="topbar-left">
+            {/* Mobile hamburger */}
+            <button className="topbar-btn"
+              style={{display:"none"}} id="hamburger"
+              onClick={()=>setMobileOpen(o=>!o)}>
+              ☰
+            </button>
+
+            {/* Breadcrumb */}
+            <nav className="breadcrumb">
+              <span className="breadcrumb-item">Signal Vault</span>
+              <span className="breadcrumb-sep">/</span>
+              <span className="breadcrumb-item current">{crumb}</span>
+            </nav>
+          </div>
+
+          <div className="topbar-right">
+            {/* Search */}
+            <button className="search-trigger" onClick={()=>setCmdOpen(true)}>
+              <Search size={14}/>
+              <span>Quick search</span>
+              <span className="search-kbd">
+                <span>⌘</span><span>K</span>
+              </span>
+            </button>
+
+            {/* API status */}
+            <div className={`status-pill${apiOnline?" online":" offline"}`}>
+              <span className="status-dot"/>
+              {apiOnline?"API Live":"Demo Mode"}
+            </div>
+
+            {/* Notifications */}
+            <button className="topbar-btn" onClick={()=>setNotifOpen(o=>!o)} style={{position:"relative"}}>
+              <Bell size={15}/>
+              {unread > 0 && <span className="notif-dot"/>}
+            </button>
+
+            {/* Docs link */}
+            <button className="topbar-btn"
+              onClick={()=>window.open("http://127.0.0.1:8000/docs","_blank")}
+              title="API Docs">
+              <ExternalLink size={14}/>
+            </button>
+          </div>
+        </header>
+
+        <NotifPanel open={notifOpen} onClose={()=>setNotifOpen(false)}/>
+        <CommandPalette open={cmdOpen} onClose={()=>setCmdOpen(false)} navigate={path=>{window.location.href=path;}}/>
+
+        {/* ── Pages ── */}
+        <div className="page">
+          <AnimatePresence mode="wait">
+            <motion.div key={location.pathname}
+              variants={pageVariants} initial="initial" animate="animate" exit="exit"
+              style={{height:"100%"}}
+            >
+              <div className="page-inner">
+                <Routes>
+                  <Route path="/overview"  element={<Overview  apiOnline={apiOnline}/>}/>
+                  <Route path="/scanner"   element={<Scanner   apiOnline={apiOnline}/>}/>
+                  <Route path="/forensics" element={<HeaderForensics/>}/>
+                  <Route path="/ledger"    element={<AuditLog   apiOnline={apiOnline}/>}/>
+                  <Route path="/reports"   element={<Reports/>}/>
+                  <Route path="*"          element={<Navigate to="/overview" replace/>}/>
+                </Routes>
+              </div>
             </motion.div>
           </AnimatePresence>
-        </main>
+        </div>
       </div>
     </div>
   );
@@ -274,25 +375,21 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing/>}/>
-        <Route path="/dashboard/*" element={<AppShell/>}/>
-        <Route path="*" element={<Navigate to="/" replace/>}/>
+        <Route path="/*" element={<AppShell/>}/>
       </Routes>
-
       <Toaster
         position="bottom-right"
         toastOptions={{
           duration: 3500,
           style: {
-            background: '#0D0028',
-            color: '#F0EEFF',
-            border: '1px solid rgba(139,92,246,0.3)',
-            boxShadow: '0 8px 30px rgba(0,0,0,0.6)',
-            fontFamily: 'Inter, system-ui, sans-serif',
-            fontSize: '0.85rem',
-            borderRadius: '12px',
+            background:"#111820", color:"#E8EDF2",
+            border:"1px solid rgba(0,229,255,0.18)",
+            boxShadow:"0 8px 32px rgba(0,0,0,0.6)",
+            fontFamily:"'Inter',sans-serif",
+            fontSize:"0.84rem", borderRadius:"10px",
           },
-          success: { iconTheme: { primary: '#10B981', secondary: '#08001F' } },
-          error:   { iconTheme: { primary: '#EF4444', secondary: '#08001F' } },
+          success:{ iconTheme:{ primary:"#00D4AA", secondary:"#060B11" } },
+          error:  { iconTheme:{ primary:"#FF4455", secondary:"#060B11" } },
         }}
       />
     </BrowserRouter>

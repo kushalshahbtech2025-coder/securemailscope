@@ -17,7 +17,10 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 
-from ml_model import FEATURE_NAMES
+try:
+    from .ml_model import FEATURE_NAMES
+except ImportError:
+    from ml_model import FEATURE_NAMES
 
 def generate_synthetic_dataset(n_samples: int = 3000, seed: int = 42) -> tuple:
     """
@@ -97,7 +100,7 @@ def generate_synthetic_dataset(n_samples: int = 3000, seed: int = 42) -> tuple:
 
     return X, y
 
-def train_pipeline(save_dir: str = None) -> dict:
+def train_pipeline(save_dir: str = None, samples: int = 3500) -> dict:
     """
     Executes the complete machine learning training pipeline.
     """
@@ -108,8 +111,8 @@ def train_pipeline(save_dir: str = None) -> dict:
     print("SecureMailScope - Machine Learning Model Pipeline Training")
     print("=" * 60)
     
-    print("\n[1/5] Synthesizing 3,500 domain security posture telemetry samples...")
-    X, y = generate_synthetic_dataset(n_samples=3500)
+    print(f"\n[1/5] Synthesizing {samples:,} domain security posture telemetry samples...")
+    X, y = generate_synthetic_dataset(n_samples=samples)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=42)
 
     print(f"      Training samples: {len(X_train)} | Test samples: {len(X_test)}")

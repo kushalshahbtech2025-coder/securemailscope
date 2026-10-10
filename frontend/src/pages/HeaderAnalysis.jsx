@@ -1,4 +1,5 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { analyzeHeader } from '../data/api.js';
 import { soundManager } from '../data/sound.js';
@@ -126,18 +127,29 @@ export default function HeaderAnalysis() {
 
   return (
     <div className="animate-fade">
-      <div style={{ marginBottom:'1.5rem' }}>
-        <h2 style={{ fontFamily:'var(--font-display)', fontSize:'1.4rem', fontWeight:700, marginBottom:'0.4rem' }}>
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        style={{ marginBottom:'1.5rem' }}
+      >
+        <h2 style={{ fontFamily:'var(--font-display)', fontSize:'1.5rem', fontWeight:800, marginBottom:'0.4rem', letterSpacing: '-0.02em' }}>
           Email Header Forensics
         </h2>
-        <p style={{ color:'var(--text-secondary)', fontSize:'0.9rem' }}>
+        <p style={{ color:'var(--text-secondary)', fontSize:'0.95rem', lineHeight: 1.6 }}>
           Paste any raw email header (from Gmail: ⋮ → Show original) to get a complete forensic breakdown.
         </p>
-      </div>
+      </motion.div>
 
-      <div style={{ display:'grid', gridTemplateColumns: result ? '1fr 1fr' : '1fr', gap:'1.25rem' }}>
+      <div style={{ display:'grid', gridTemplateColumns: result ? '1fr 1fr' : '1fr', gap:'1.5rem' }}>
         {/* Input */}
-        <div className="card">
+        <motion.div
+          className="card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          whileHover={{ y: -2 }}
+        >
           <div className="card-header">
             <span className="card-title">Raw Email Header</span>
             <div style={{ display:'flex', gap:'0.5rem' }}>
@@ -169,14 +181,22 @@ export default function HeaderAnalysis() {
               💡 In Gmail: Open email → ⋮ (More) → "Show original" → Copy all text
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Results */}
         {result && (
-          <div style={{ display:'flex', flexDirection:'column', gap:'1.25rem' }}>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            style={{ display:'flex', flexDirection:'column', gap:'1.5rem' }}
+          >
             {/* DANGER / ANOMALY ALERT BANNER */}
             {result.suspicious && (
-              <div style={{
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                style={{
                 padding: '1.1rem 1.4rem',
                 background: 'linear-gradient(135deg, rgba(255, 0, 85, 0.2) 0%, rgba(255, 183, 3, 0.12) 100%)',
                 border: '1px solid #FF0055', borderRadius: '12px',
@@ -214,10 +234,17 @@ export default function HeaderAnalysis() {
                   🔊 Replay Alarm
                 </button>
               </div>
+            </motion.div>
             )}
 
             {/* Auth Summary */}
-            <div className="card animate-scale">
+            <motion.div
+              className="card"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+              whileHover={{ y: -2 }}
+            >
               <div className="card-header">
                 <span className="card-title">Authentication Results</span>
                 {result.suspicious
@@ -242,13 +269,19 @@ export default function HeaderAnalysis() {
                   ))}
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* AI Forensics Assessment */}
             {result.ai_forensics?.content && (
-              <div className="card animate-scale" style={{
+              <motion.div
+                className="card"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.4 }}
+                whileHover={{ y: -2 }}
+                style={{
                 borderLeft: '4px solid var(--accent-cyan)',
-                background: 'linear-gradient(135deg, rgba(0, 212, 255, 0.05) 0%, rgba(5, 11, 24, 0.7) 100%)'
+                background: 'linear-gradient(135deg, rgba(212,175,55, 0.05) 0%, rgba(5, 11, 24, 0.7) 100%)'
               }}>
                 <div className="card-header" style={{ paddingBottom: '0.4rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -256,9 +289,9 @@ export default function HeaderAnalysis() {
                     <span className="card-title">AI Forensic Intelligence</span>
                   </div>
                   <span className="tag" style={{
-                    background: 'rgba(0,212,255,0.15)',
+                    background: 'rgba(212,175,55,0.15)',
                     color: 'var(--accent-cyan)',
-                    border: '1px solid rgba(0,212,255,0.3)',
+                    border: '1px solid rgba(212,175,55,0.3)',
                     fontSize: '0.72rem'
                   }}>
                     {result.ai_forensics.source === 'gemini-1.5-flash' ? 'Google Gemini 1.5 Flash' : 'AI Forensics Engine'}
@@ -268,11 +301,18 @@ export default function HeaderAnalysis() {
                   {result.ai_forensics.content}
                 </div>
               </div>
+            </motion.div>
             )}
 
             {/* Routing Hops */}
             {result.hops.length > 0 && (
-              <div className="card">
+              <motion.div
+                className="card"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.5 }}
+                whileHover={{ y: -2 }}
+              >
                 <div className="card-header"><span className="card-title">Email Routing Path</span></div>
                 <div className="card-body">
                   {result.hops.map((hop, i) => (
@@ -283,7 +323,7 @@ export default function HeaderAnalysis() {
                     }}>
                       <div style={{
                         width:22, height:22, borderRadius:'50%',
-                        background:'rgba(0,212,255,0.1)', border:'1px solid rgba(0,212,255,0.2)',
+                        background:'rgba(212,175,55,0.1)', border:'1px solid rgba(212,175,55,0.2)',
                         display:'flex', alignItems:'center', justifyContent:'center',
                         fontSize:'0.65rem', color:'var(--accent-cyan)', fontWeight:700, flexShrink:0
                       }}>{i+1}</div>
@@ -304,7 +344,13 @@ export default function HeaderAnalysis() {
             )}
 
             {/* Header Fields */}
-            <div className="card">
+            <motion.div
+              className="card"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.6 }}
+              whileHover={{ y: -2 }}
+            >
               <div className="card-header"><span className="card-title">Parsed Header Fields</span></div>
               <div className="card-body" style={{ maxHeight:'280px', overflowY:'auto' }}>
                 {result.fields.slice(0, 20).map((f, i) => (
@@ -319,8 +365,8 @@ export default function HeaderAnalysis() {
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         )}
       </div>
     </div>

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { AUDIT_LOGS, getScoreColor } from '../data/mockData.js';
 
@@ -41,9 +42,16 @@ const REPORT_TEMPLATES = [
   },
 ];
 
-function ReportCard({ template, onGenerate, generating }) {
+function ReportCard({ template, onGenerate, generating, index }) {
   return (
-    <div className="card" style={{ transition:'all 0.3s' }}>
+    <motion.div
+      className="card"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: index * 0.1 }}
+      whileHover={{ y: -4 }}
+      style={{ transition:'all 0.3s' }}
+    >
       <div className="card-body" style={{ display:'flex', flexDirection:'column', gap:'1rem', height:'100%' }}>
         <div style={{ fontSize:'2.5rem' }}>{template.icon}</div>
         <div>
@@ -70,7 +78,7 @@ function ReportCard({ template, onGenerate, generating }) {
           }
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -86,24 +94,40 @@ export default function Reports() {
 
   return (
     <div className="animate-fade">
-      <div style={{ marginBottom:'1.5rem' }}>
-        <h2 style={{ fontFamily:'var(--font-display)', fontSize:'1.4rem', fontWeight:700, marginBottom:'0.4rem' }}>
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        style={{ marginBottom:'1.75rem' }}
+      >
+        <h2 style={{ fontFamily:'var(--font-display)', fontSize:'1.5rem', fontWeight:800, marginBottom:'0.4rem', letterSpacing: '-0.02em' }}>
           Compliance Reports
         </h2>
-        <p style={{ color:'var(--text-secondary)', fontSize:'0.9rem' }}>
+        <p style={{ color:'var(--text-secondary)', fontSize:'0.95rem', lineHeight: 1.6 }}>
           Generate enterprise-grade PDF reports for compliance, regulatory, and executive stakeholders.
         </p>
-      </div>
+      </motion.div>
 
       {/* Report Templates */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'1.25rem', marginBottom:'1.5rem' }}>
-        {REPORT_TEMPLATES.map(t => (
-          <ReportCard key={t.id} template={t} onGenerate={handleGenerate} generating={generating} />
+      <motion.div
+        style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'1.5rem', marginBottom:'1.75rem' }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        {REPORT_TEMPLATES.map((t, i) => (
+          <ReportCard key={t.id} template={t} onGenerate={handleGenerate} generating={generating} index={i} />
         ))}
-      </div>
+      </motion.div>
 
       {/* Recent Reports */}
-      <div className="card">
+      <motion.div
+        className="card"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        whileHover={{ y: -2 }}
+      >
         <div className="card-header">
           <span className="card-title">Generated Report History</span>
           <button className="btn btn-outline" style={{ fontSize:'0.78rem', padding:'0.3rem 0.75rem' }}>
@@ -152,10 +176,17 @@ export default function Reports() {
             </tbody>
           </table>
         </div>
-      </div>
+      </motion.div>
 
       {/* Report Features */}
-      <div className="card" style={{ marginTop:'1.25rem' }}>
+      <motion.div
+        className="card"
+        style={{ marginTop:'1.5rem' }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        whileHover={{ y: -2 }}
+      >
         <div className="card-header"><span className="card-title">Report Contents</span></div>
         <div className="card-body">
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'1rem' }}>
@@ -178,7 +209,7 @@ export default function Reports() {
             ))}
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

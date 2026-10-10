@@ -23,13 +23,20 @@ npm run dev
 Open → **http://localhost:5173**
 
 ### 3. FastAPI Backend
+From the project root:
 ```powershell
-cd backend
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r backend\requirements.txt
+uvicorn backend.main:app --reload --port 8000
 ```
 - API → **http://localhost:8000**
 - Swagger Docs → **http://localhost:8000/docs**
+- Health → **http://localhost:8000/health**
+
+Optionally copy `backend/.env.example` to `backend/.env` and set `GEMINI_API_KEY` and `CORS_ORIGINS` (comma-separated origins). Without the AI key, the API uses its rule-based fallback. Audit scans persist locally in SQLite at `backend/audit.sqlite3`; configure `AUDIT_DB_PATH` to a persistent mounted disk in deployment. Audit references are not blockchain transactions, and certificate, DNSSEC validation, breach intelligence, and industry benchmarking are reported as unavailable until real providers are implemented.
+
+Run backend checks with `pytest backend/tests` from the project root.
 
 ---
 

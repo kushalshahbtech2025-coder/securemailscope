@@ -4,30 +4,37 @@ AI-Assisted Cryptographic Security Posture Assessment
 SIH 2026 | Problem ID: SIH26159
 """
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Path, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
+import asyncio
+import ipaddress
 import os
 import httpx
 import dns.resolver
+import smtplib
 import ssl
-import socket
 import hashlib
+import sqlite3
 import time
-import random
 import re
+from contextlib import closing
 
 try:
     from dotenv import load_dotenv
-    load_dotenv()
-except Exception:
+    load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+except ImportError:
     pass
 
 import numpy as np
-from ml_model import model_instance, FEATURE_NAMES
-from train_model import train_pipeline
+try:
+    from .ml_model import model_instance, FEATURE_NAMES
+    from .train_model import train_pipeline
+except ImportError:
+    from ml_model import model_instance, FEATURE_NAMES
+    from train_model import train_pipeline
 
 app = FastAPI(
     title="SecureMailScope API",
@@ -37,46 +44,58 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+cors_origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",") if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=cors_origins,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
-# ── In-memory audit log (replace with PostgreSQL + blockchain in production) ──
-audit_log = []
+DATABASE_PATH = os.getenv("AUDIT_DB_PATH", os.path.join(os.path.dirname(__file__), "audit.sqlite3"))
+AUDIT_LIMIT = 1000
+_scan_semaphore = asyncio.Semaphore(8)
+_training_lock = asyncio.Lock()
+
+
+def init_audit_db():
+    with closing(sqlite3.connect(DATABASE_PATH)) as conn:
+        conn.execute("CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, domain TEXT NOT NULL, score INTEGER NOT NULL, grade TEXT NOT NULL, tx_hash TEXT NOT NULL, timestamp TEXT NOT NULL)")
+        conn.commit()
+
+
+@app.on_event("startup")
+def startup():
+    init_audit_db()
 
 
 # ── Pydantic Models ──
 
 class ScanRequest(BaseModel):
-    domain: str
+    domain: str = Field(min_length=3, max_length=253)
+
+    @field_validator("domain")
+    @classmethod
+    def validate_domain(cls, value):
+        normalized = clean_domain(value)
+        if not normalized or len(normalized) > 253 or ":" in normalized or re.fullmatch(r"\d+(?:\.\d+){3}", normalized) or any(not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", label) for label in normalized.rstrip(".").split(".")) or "." not in normalized.rstrip("."):
+            raise ValueError("Enter a valid domain name")
+        return normalized.rstrip(".")
 
 class HeaderRequest(BaseModel):
-    raw_header: str
+    raw_header: str = Field(min_length=1, max_length=100_000)
 
 class AIChatRequest(BaseModel):
-    prompt: str
+    prompt: str = Field(min_length=1, max_length=4000)
     context: Optional[dict] = None
 
-class ScanResult(BaseModel):
-    domain: str
-    score: int
-    grade: str
-    checks: list
-    tls_details: dict
-    recommendations: list
-    tx_hash: str
-    timestamp: float
-
 class ModelTrainRequest(BaseModel):
-    samples: Optional[int] = 3500
+    samples: int = Field(default=3500, ge=500, le=20000)
 
 class ModelPredictRequest(BaseModel):
     checks: Optional[dict] = None
     tls_details: Optional[dict] = None
-    features: Optional[list] = None
+    features: Optional[list[float]] = None
 
 
 # ── Gemini AI Helper ──
@@ -93,49 +112,45 @@ async def generate_gemini_analysis(prompt: str, fallback_text: str = "") -> dict
         "generationConfig": {"temperature": 0.3, "maxOutputTokens": 600}
     }
 
-    async with httpx.AsyncClient(timeout=25.0) as client:
-        for model in candidate_models:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-            try:
-                resp = await client.post(url, json=payload)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    candidates = data.get("candidates", [])
-                    if candidates and "content" in candidates[0]:
-                        parts = candidates[0]["content"].get("parts", [])
-                        if parts and "text" in parts[0]:
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(12.0, connect=3.0)) as client:
+            for model in candidate_models:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+                try:
+                    resp = await client.post(url, params={"key": api_key}, json=payload)
+                    if resp.status_code == 200:
+                        candidates = resp.json().get("candidates", [])
+                        parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
+                        if parts and parts[0].get("text"):
                             return {"content": parts[0]["text"].strip(), "source": model}
-            except Exception:
-                continue
-
+                    if resp.status_code not in (404, 429, 500, 502, 503):
+                        break
+                except httpx.HTTPError:
+                    continue
+    except httpx.HTTPError:
+        pass
     return {"content": fallback_text, "source": "rule_engine"}
 
 
 # ── Helper Functions ──
 
 def clean_domain(domain: str) -> str:
-    domain = re.sub(r'^https?://', '', domain)
-    domain = domain.split('/')[0].strip()
-    return domain.lower()
+    value = domain.strip()
+    if "://" in value:
+        value = value.split("://", 1)[1]
+    return value.split("/", 1)[0].split(":", 1)[0].rstrip(".").lower()
 
 def compute_score(checks: dict) -> int:
-    score = 100
-    weights = {
-        'spf':    20,
-        'dkim':   20,
-        'dmarc':  15,
-        'tls':    20,
-        'cert':   15,
-        'dnssec': 5,
-        'breach': 5,
-    }
-    for key, weight in weights.items():
-        status = checks.get(key, {}).get('status', 'fail')
-        if status == 'fail':
-            score -= weight
-        elif status == 'warn':
-            score -= weight // 2
-    return max(0, score)
+    weights = {"spf": 20, "dkim": 20, "dmarc": 15, "tls": 20, "cert": 15, "dnssec": 5, "breach": 5}
+    assessed_weight = sum(weight for key, weight in weights.items() if checks.get(key, {}).get("status") in {"pass", "warn", "fail"})
+    if not assessed_weight:
+        return 0
+    earned = sum(
+        weight * (1 if checks[key]["status"] == "pass" else 0.5 if checks[key]["status"] == "warn" else 0)
+        for key, weight in weights.items()
+        if checks.get(key, {}).get("status") in {"pass", "warn", "fail"}
+    )
+    return round(earned * 100 / assessed_weight)
 
 def score_to_grade(score: int) -> str:
     if score >= 90: return 'A+'
@@ -145,13 +160,9 @@ def score_to_grade(score: int) -> str:
     if score >= 50: return 'D'
     return 'F'
 
-def fake_tx_hash(domain: str) -> str:
-    data = f"{domain}-{time.time()}".encode()
-    return '0x' + hashlib.sha256(data).hexdigest()[:40] + '…'
-
 def check_spf(domain: str) -> dict:
     try:
-        answers = dns.resolver.resolve(domain, 'TXT')
+        answers = dns.resolver.resolve(domain, 'TXT', lifetime=3)
         for rdata in answers:
             txt = str(rdata)
             if 'v=spf1' in txt:
@@ -166,7 +177,7 @@ def check_spf(domain: str) -> dict:
 
 def check_dmarc(domain: str) -> dict:
     try:
-        answers = dns.resolver.resolve(f'_dmarc.{domain}', 'TXT')
+        answers = dns.resolver.resolve(f'_dmarc.{domain}', 'TXT', lifetime=3)
         for rdata in answers:
             txt = str(rdata)
             if 'v=DMARC1' in txt:
@@ -183,7 +194,7 @@ def check_dkim(domain: str) -> dict:
     selectors = ['default', 'google', 'mail', 'k1', 'selector1', 'selector2', '20230601']
     for sel in selectors:
         try:
-            dns.resolver.resolve(f'{sel}._domainkey.{domain}', 'TXT')
+            dns.resolver.resolve(f'{sel}._domainkey.{domain}', 'TXT', lifetime=2)
             return {'status': 'pass', 'value': f'Selector: {sel}', 'severity': 'low', 'detail': f'DKIM key found at {sel}._domainkey'}
         except Exception:
             continue
@@ -191,27 +202,28 @@ def check_dkim(domain: str) -> dict:
 
 def check_tls(domain: str) -> dict:
     try:
-        mx_records = dns.resolver.resolve(domain, 'MX')
-        mx_host = str(sorted(mx_records, key=lambda r: r.preference)[0].exchange).rstrip('.')
-        ctx = ssl.create_default_context()
-        with ctx.wrap_socket(socket.create_connection((mx_host, 443), timeout=5), server_hostname=mx_host) as s:
-            ver = s.version()
-            cipher = s.cipher()[0]
-            if ver == 'TLSv1.3':
-                return {'status': 'pass', 'value': f'{ver} ({cipher})', 'severity': 'low', 'detail': 'TLS 1.3 — optimal'}
-            elif ver == 'TLSv1.2':
-                return {'status': 'warn', 'value': f'{ver} ({cipher})', 'severity': 'medium', 'detail': 'TLS 1.2 — upgrade to TLS 1.3'}
-            return {'status': 'fail', 'value': f'{ver} — deprecated', 'severity': 'critical', 'detail': 'Upgrade to TLS 1.3 immediately'}
+        mx_records = dns.resolver.resolve(domain, "MX", lifetime=4)
+        mx_host = str(sorted(mx_records, key=lambda r: r.preference)[0].exchange).rstrip(".")
+        addresses = dns.resolver.resolve(mx_host, "A", lifetime=4)
+        public_addresses = [str(record) for record in addresses if ipaddress.ip_address(str(record)).is_global]
+        if not public_addresses:
+            return {"status": "unknown", "value": "No public MX address", "severity": "medium", "detail": "SMTP TLS could not be safely checked"}
+        with smtplib.SMTP(timeout=4) as client:
+            client.connect(public_addresses[0], 25)
+            client.ehlo()
+            if not client.has_extn("starttls"):
+                return {"status": "fail", "value": "STARTTLS unavailable", "severity": "critical", "detail": "The mail server did not advertise STARTTLS"}
+            client.starttls(context=ssl.create_default_context())
+            version = client.sock.version()
+            if version == "TLSv1.3":
+                return {"status": "pass", "value": version, "severity": "low", "detail": "SMTP STARTTLS negotiated TLS 1.3"}
+            if version == "TLSv1.2":
+                return {"status": "warn", "value": version, "severity": "medium", "detail": "SMTP STARTTLS negotiated TLS 1.2"}
+            return {"status": "fail", "value": version or "Unknown TLS", "severity": "critical", "detail": "SMTP server negotiated a deprecated TLS version"}
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+        return {"status": "unknown", "value": "MX record unavailable", "severity": "medium", "detail": "SMTP STARTTLS could not be checked because no MX record was found"}
     except Exception:
-        # Fallback: simulate based on domain hash
-        h = int(hashlib.md5(domain.encode()).hexdigest(), 16)
-        versions = ['TLS 1.3', 'TLS 1.2', 'TLS 1.1']
-        ver = versions[h % 3]
-        if ver == 'TLS 1.3':
-            return {'status': 'pass', 'value': ver, 'severity': 'low', 'detail': 'TLS 1.3 detected'}
-        elif ver == 'TLS 1.2':
-            return {'status': 'warn', 'value': ver, 'severity': 'medium', 'detail': 'TLS 1.2 — consider upgrading'}
-        return {'status': 'fail', 'value': ver, 'severity': 'critical', 'detail': 'Deprecated TLS version in use'}
+        return {"status": "unknown", "value": "TLS check unavailable", "severity": "medium", "detail": "SMTP STARTTLS probe failed or timed out"}
 
 
 # ── API Routes ──
@@ -228,36 +240,37 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {
-        "status": "healthy",
-        "gemini_configured": bool(os.environ.get("GEMINI_API_KEY")),
-        "timestamp": time.time()
-    }
+    try:
+        with closing(sqlite3.connect(DATABASE_PATH, timeout=1)) as conn:
+            conn.execute("SELECT 1")
+        return {"status": "healthy", "database": "ready", "model": "ready" if model_instance.pipeline is not None else "baseline", "timestamp": time.time()}
+    except sqlite3.Error:
+        raise HTTPException(status_code=503, detail="Audit storage unavailable")
 
 
 @app.post("/api/scan/domain")
 async def scan_domain(req: ScanRequest):
     """Full cryptographic posture assessment for a domain."""
-    domain = clean_domain(req.domain)
-    if not domain or '.' not in domain:
-        raise HTTPException(status_code=400, detail="Invalid domain name")
+    domain = req.domain
+    async with _scan_semaphore:
+        loop = asyncio.get_running_loop()
+        checks_raw = await asyncio.gather(
+            loop.run_in_executor(None, check_spf, domain),
+            loop.run_in_executor(None, check_dkim, domain),
+            loop.run_in_executor(None, check_dmarc, domain),
+            loop.run_in_executor(None, check_tls, domain),
+        )
+    checks_raw = dict(zip(("spf", "dkim", "dmarc", "tls"), checks_raw))
+    checks_raw["cert"] = {"status": "unknown", "value": "Not checked", "severity": "medium", "detail": "Certificate validation is not implemented"}
+    checks_raw["dnssec"] = {"status": "unknown", "value": "Not checked", "severity": "medium", "detail": "DNSSEC validation is not implemented"}
+    checks_raw["breach"] = {"status": "unknown", "value": "Not checked", "severity": "medium", "detail": "No breach intelligence provider is configured"}
 
-    # Run all checks
-    checks_raw = {
-        'spf':    check_spf(domain),
-        'dkim':   check_dkim(domain),
-        'dmarc':  check_dmarc(domain),
-        'tls':    check_tls(domain),
-        'cert':   {'status': 'pass', 'value': 'Valid (simulated)', 'severity': 'low', 'detail': 'Certificate chain OK'},
-        'dnssec': {'status': 'warn', 'value': 'Not verified', 'severity': 'medium', 'detail': 'Enable DNSSEC for your zone'},
-        'breach': {'status': 'pass', 'value': 'No exposure found', 'severity': 'low', 'detail': 'HaveIBeenPwned: clean'},
-    }
-
-    # Machine Learning Cryptographic Posture Inference
-    ml_eval = model_instance.predict_score(checks_raw, checks_raw.get('tls', {}))
-    score = ml_eval['score']
-    grade = ml_eval['grade']
-    tx    = fake_tx_hash(domain)
+    score = compute_score(checks_raw)
+    grade = score_to_grade(score)
+    ml_eval = model_instance.predict_score(checks_raw, checks_raw.get("tls", {}))
+    ml_eval["score"] = score
+    ml_eval["grade"] = grade
+    audit_ref = hashlib.sha256(f"{domain}-{time.time_ns()}".encode()).hexdigest()
 
     checks = [
         {'id': k, 'name': {
@@ -306,21 +319,19 @@ async def scan_domain(req: ScanRequest):
             'feature_breakdown': ml_eval.get('feature_breakdown', []),
             'cvss_vector': ml_eval.get('cvss_vector', {})
         },
-        'tx_hash': tx,
+        'tx_hash': None,
+        'audit_ref': audit_ref,
         'timestamp': time.time(),
     }
 
-    # Store in audit log
-    audit_log.insert(0, {
-        'id': len(audit_log) + 1,
-        'domain': domain,
-        'score': score,
-        'grade': grade,
-        'tx_hash': tx,
-        'block': 4821 + len(audit_log),
-        'timestamp': time.strftime('%Y-%m-%d %H:%M'),
-        'status': 'confirmed',
-    })
+    with closing(sqlite3.connect(DATABASE_PATH, timeout=5)) as conn:
+        cursor = conn.execute(
+            "INSERT INTO audit_log (domain, score, grade, tx_hash, timestamp) VALUES (?, ?, ?, ?, ?)",
+            (domain, score, grade, audit_ref, time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())),
+        )
+        result["audit_id"] = cursor.lastrowid
+        conn.execute("DELETE FROM audit_log WHERE id NOT IN (SELECT id FROM audit_log ORDER BY id DESC LIMIT ?)", (AUDIT_LIMIT,))
+        conn.commit()
 
     return JSONResponse(content=result)
 
@@ -329,12 +340,12 @@ async def scan_domain(req: ScanRequest):
 async def analyze_header(req: HeaderRequest):
     """Parse and analyze a raw email header."""
     raw = req.raw_header
-    lines = raw.split('\n')
+    unfolded = re.sub(r"\r?\n[ \t]+", " ", raw)
+    lines = unfolded.splitlines()
 
     auth = {'spf': 'unknown', 'dkim': 'unknown', 'dmarc': 'unknown'}
     hops = []
     fields = {}
-    suspicious_ips = []
 
     for line in lines:
         lower = line.lower()
@@ -345,9 +356,15 @@ async def analyze_header(req: HeaderRequest):
         if 'dmarc=pass' in lower:  auth['dmarc'] = 'pass'
         elif 'dmarc=fail' in lower:auth['dmarc'] = 'fail'
 
-        if line.startswith('Received:'):
-            ip_match = re.search(r'\[(\d+\.\d+\.\d+\.\d+)\]', line)
-            hops.append({'line': line[:70], 'ip': ip_match.group(1) if ip_match else None})
+        if line.lower().startswith('received:'):
+            ip_match = re.search(r'\[([0-9a-fA-F:.]+)\]', line)
+            ip = None
+            if ip_match:
+                try:
+                    ip = str(ipaddress.ip_address(ip_match.group(1)))
+                except ValueError:
+                    pass
+            hops.append({'line': line[:200], 'ip': ip})
 
         colon = line.find(':')
         if colon > 0 and not line.startswith((' ', '\t')):
@@ -396,32 +413,25 @@ async def ask_gemini_ai(req: AIChatRequest):
 
 
 @app.get("/api/blockchain/logs")
-async def get_blockchain_logs(limit: int = 20, offset: int = 0):
-    """Fetch immutable blockchain audit log entries."""
-    return {
-        'total': len(audit_log),
-        'records': audit_log[offset:offset + limit],
-        'contract': '0xABcD1234567890abcdef1234567890ABCDEF0001',
-        'network': 'Ethereum Sepolia Testnet',
-    }
+async def get_audit_logs(limit: int = Query(default=20, ge=1, le=100), offset: int = Query(default=0, ge=0)):
+    """Return persisted audit records; this is not a blockchain ledger."""
+    with closing(sqlite3.connect(DATABASE_PATH, timeout=5)) as conn:
+        conn.row_factory = sqlite3.Row
+        total = conn.execute("SELECT COUNT(*) FROM audit_log").fetchone()[0]
+        rows = conn.execute("SELECT id, domain, score, grade, tx_hash, timestamp FROM audit_log ORDER BY id DESC LIMIT ? OFFSET ?", (limit, offset)).fetchall()
+    records = [{**dict(row), "status": "recorded"} for row in rows]
+    return {"total": total, "records": records, "storage": "sqlite"}
 
 
 @app.get("/api/benchmark/{domain}")
-async def benchmark(domain: str):
-    """Compare domain posture against industry averages."""
+async def benchmark(domain: str = Path(..., min_length=3, max_length=253)):
+    """Return the latest recorded score for the requested domain, if available."""
     domain = clean_domain(domain)
-    return {
-        'domain': domain,
-        'industry_avg': 65,
-        'your_score': random.randint(40, 95),
-        'top_10_percent': 88,
-        'recommendations_count': random.randint(1, 5),
-        'peers': [
-            {'domain': 'competitor-a.com', 'score': 72},
-            {'domain': 'competitor-b.com', 'score': 81},
-            {'domain': 'industry-avg',     'score': 65},
-        ]
-    }
+    if not re.fullmatch(r"[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?\.[a-z0-9-]{2,63}", domain):
+        raise HTTPException(status_code=400, detail="Invalid domain name")
+    with closing(sqlite3.connect(DATABASE_PATH, timeout=5)) as conn:
+        row = conn.execute("SELECT score FROM audit_log WHERE domain = ? ORDER BY id DESC LIMIT 1", (domain,)).fetchone()
+    return {"domain": domain, "your_score": row[0] if row else None, "industry_avg": None, "top_10_percent": None, "comparison_available": False}
 
 
 # ── ML Model Pipeline Endpoints ──
@@ -434,11 +444,11 @@ async def get_model_info():
         "status": "online" if model_instance.pipeline is not None else "calibrated_baseline",
         "model_type": metadata.get("model_type", "Scikit-Learn GradientBoostingRegressor Pipeline"),
         "algorithm": metadata.get("algorithm", "Gradient Boosted Decision Trees (180 Estimators, Depth 4)"),
-        "r2_score": metadata.get("r2_score", 0.9934),
-        "cv_5fold_r2": metadata.get("cv_5fold_r2", 0.9922),
-        "mae": metadata.get("mae", 1.16),
-        "rmse": metadata.get("rmse", 1.49),
-        "sample_count": metadata.get("sample_count", 3500),
+        "r2_score": metadata.get("r2_score"),
+        "cv_5fold_r2": metadata.get("cv_5fold_r2"),
+        "mae": metadata.get("mae"),
+        "rmse": metadata.get("rmse"),
+        "sample_count": metadata.get("sample_count"),
         "trained_at": metadata.get("trained_at"),
         "feature_ranking": metadata.get("feature_ranking", []),
         "features": FEATURE_NAMES,
@@ -447,20 +457,17 @@ async def get_model_info():
 
 
 @app.post("/api/model/train")
-async def train_model_pipeline(req: ModelTrainRequest = None):
-    """Trigger synchronous or background retraining of the cybersecurity posture ML model."""
-    samples = req.samples if req and req.samples else 3500
-    try:
-        results = train_pipeline()
-        # Reload model in memory
-        model_instance.load_model()
-        return {
-            "success": True,
-            "message": f"Successfully trained Gradient Boosting Pipeline on {samples} telemetry samples",
-            "metrics": results
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Model training failed: {str(e)}")
+async def train_model_pipeline(req: ModelTrainRequest = ModelTrainRequest()):
+    """Retrain the synthetic-data model; keep training off the event loop."""
+    if _training_lock.locked():
+        raise HTTPException(status_code=409, detail="Model training is already in progress")
+    async with _training_lock:
+        try:
+            results = await asyncio.to_thread(train_pipeline, samples=req.samples)
+            model_instance.load_model()
+            return {"success": True, "message": f"Trained model on {req.samples} synthetic samples", "metrics": results}
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail="Model training failed") from exc
 
 
 @app.post("/api/model/predict")
@@ -472,11 +479,13 @@ async def predict_model_posture(req: ModelPredictRequest):
                 status_code=400, 
                 detail=f"Expected {len(FEATURE_NAMES)} features: {FEATURE_NAMES}"
             )
+        if not np.isfinite(req.features).all():
+            raise HTTPException(status_code=400, detail="Features must be finite numbers")
         x = np.array([req.features], dtype=np.float32)
-        try:
+        if model_instance.pipeline is not None:
             raw_score = float(model_instance.pipeline.predict(x)[0])
             score = max(5, min(99, int(round(raw_score))))
-        except Exception:
+        else:
             score, _, _ = model_instance._rule_based_score(x[0])
             
         return {

@@ -1,4 +1,4 @@
-// Centralized mock data & scan simulation for the dashboard
+﻿// Centralized mock data & scan simulation for the dashboard
 
 export const SCAN_RESULTS = {
   'google.com': {
@@ -252,14 +252,14 @@ export const BREACH_DATA = [
 export const SEVERITY_DIST = [
   { name: 'Critical', value: 0, color: '#EF4444' },
   { name: 'High',     value: 1, color: '#F59E0B' },
-  { name: 'Medium',   value: 2, color: '#06B6D4' },
-  { name: 'Low',      value: 6, color: '#10B981' },
+  { name: 'Medium',   value: 2, color: '#D4AF37' },
+  { name: 'Low',      value: 6, color: '#00C896' },
 ];
 
 export function getScoreColor(score) {
-  if (score >= 85) return 'var(--accent-green)';
-  if (score >= 60) return 'var(--accent-amber)';
-  return 'var(--accent-red)';
+  if (score >= 85) return '#00C896';
+  if (score >= 60) return '#D4AF37';
+  return '#FF4468';
 }
 
 export function getScoreClass(score) {

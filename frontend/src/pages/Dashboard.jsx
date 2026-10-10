@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   LineChart, Line, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell
@@ -39,7 +40,7 @@ function ScoreGauge({ score }) {
       <div style={{ position: 'relative', display: 'inline-flex' }}>
         <svg width={176} height={176} viewBox="0 0 176 176">
           {/* Track */}
-          <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(26,58,92,0.5)" strokeWidth={10} />
+          <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(212,175,55,0.10)" strokeWidth={10} />
           {/* Progress */}
           <circle cx={cx} cy={cy} r={r} fill="none"
             stroke={color} strokeWidth={10}
@@ -143,24 +144,30 @@ export default function Dashboard({ apiOnline }) {
   }, []);
 
   const CHAINS = [
-    { id: 'sepolia', name: 'Ethereum Sepolia', icon: '⛓️', consensus: 'PoS (Finalized)', rpc: '12ms', color: '#FBBF24' },
-    { id: 'arbitrum', name: 'Arbitrum Nitro', icon: '🚀', consensus: 'Rollup L2', rpc: '8ms', color: '#00F5FF' },
-    { id: 'besu', name: 'Hyperledger Besu', icon: '🛡️', consensus: 'IBFT 2.0 Enterprise', rpc: '4ms', color: '#00FFA3' },
-    { id: 'polygon', name: 'Polygon zkEVM', icon: '⚡', consensus: 'Zero-Knowledge Proof', rpc: '15ms', color: '#38BDF8' },
+    { id: 'sepolia', name: 'Ethereum Sepolia', icon: '⛓️', consensus: 'PoS (Finalized)', rpc: '12ms', color: '#D4AF37' },
+    { id: 'arbitrum', name: 'Arbitrum Nitro', icon: '🚀', consensus: 'Rollup L2', rpc: '8ms', color: '#D4AF37' },
+    { id: 'besu', name: 'Hyperledger Besu', icon: '🛡️', consensus: 'IBFT 2.0 Enterprise', rpc: '4ms', color: '#00C896' },
+    { id: 'polygon', name: 'Polygon zkEVM', icon: '⚡', consensus: 'Zero-Knowledge Proof', rpc: '15ms', color: '#D4AF37' },
   ];
 
   return (
     <div className="animate-fade">
       {/* ── HIGH-TECH MULTI-CHAIN CONSENSUS & NODE STATUS BAR ── */}
-      <div style={{
-        marginBottom: '1.25rem', padding: '0.85rem 1.25rem',
-        background: 'rgba(6, 14, 28, 0.95)',
-        border: '1px solid rgba(0, 245, 255, 0.25)',
-        borderRadius: '12px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexWrap: 'wrap', gap: '1rem',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.4), inset 0 0 20px rgba(0, 245, 255, 0.03)'
-      }}>
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          marginBottom: '1.5rem', padding: '0.9rem 1.5rem',
+          background: 'rgba(5, 12, 28, 0.96)',
+          border: '1px solid rgba(212,175,55, 0.3)',
+          borderRadius: '14px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          flexWrap: 'wrap', gap: '1rem',
+          boxShadow: '0 6px 24px rgba(0,0,0,0.5), inset 0 0 25px rgba(212,175,55, 0.04)',
+          backdropFilter: 'blur(20px)'
+        }}
+      >
         {/* Left: Chain Selectors */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
@@ -203,28 +210,32 @@ export default function Dashboard({ apiOnline }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '0.74rem', fontFamily: 'var(--font-mono)' }}>
           <div>
             <span style={{ color: 'var(--text-muted)' }}>GAS: </span>
-            <span style={{ color: '#00F5FF', fontWeight: 700 }}>18.2 GWEI</span>
+            <span style={{ color: '#D4AF37', fontWeight: 700 }}>18.2 GWEI</span>
           </div>
           <div style={{ color: 'rgba(255,255,255,0.15)' }}>|</div>
           <div>
             <span style={{ color: 'var(--text-muted)' }}>CONTRACT: </span>
-            <span style={{ color: '#00FFA3', fontWeight: 700 }}>0x71C8…2bC8 ✓</span>
+            <span style={{ color: '#00C896', fontWeight: 700 }}>0x71C8…2bC8 ✓</span>
           </div>
           <div style={{ color: 'rgba(255,255,255,0.15)' }}>|</div>
           <div>
             <span style={{ color: 'var(--text-muted)' }}>STATUS: </span>
-            <span style={{ color: '#FBBF24', fontWeight: 700 }}>100% SYNCED</span>
+            <span style={{ color: '#D4AF37', fontWeight: 700 }}>100% SYNCED</span>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Cyber Threat Brainstorm Alert Banner */}
-      <div style={{
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+        style={{
         marginBottom: '1.25rem', padding: '1rem 1.35rem',
-        background: 'linear-gradient(135deg, rgba(0,245,255,0.07) 0%, rgba(251,191,36,0.08) 100%)',
-        border: '1px solid rgba(0,245,255,0.25)', borderRadius: '12px',
+        background: 'linear-gradient(135deg, rgba(212,175,55,0.07) 0%, rgba(212,175,55,0.08) 100%)',
+        border: '1px solid rgba(212,175,55,0.25)', borderRadius: '12px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.85rem',
-        boxShadow: '0 4px 24px rgba(0,245,255,0.06)'
+        boxShadow: '0 4px 24px rgba(212,175,55,0.06)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
           <span style={{ fontSize: '1.5rem', animation: 'spin 12s linear infinite', display: 'inline-block' }}>🧠</span>
@@ -246,19 +257,23 @@ export default function Dashboard({ apiOnline }) {
           className="btn btn-primary"
           style={{
             fontSize: '0.82rem', padding: '0.45rem 1rem',
-            background: 'linear-gradient(135deg, #00FFA3 0%, #00F5FF 100%)',
-            color: '#030712', fontWeight: 800, border: 'none'
+            background: 'linear-gradient(135deg, #00C896 0%, #D4AF37 100%)',
+            color: '#0A0005', fontWeight: 800, border: 'none'
           }}
         >
           Launch Threat Brainstormer ↗
         </button>
-      </div>
+      </motion.div>
 
       {/* API mode banner */}
       {!apiOnline && (
-        <div style={{
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, delay: 0.15 }}
+          style={{
           marginBottom: '1rem', padding: '0.65rem 1.25rem',
-          background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.25)',
+          background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.25)',
           borderRadius: 10, fontSize: '0.82rem', color: 'var(--accent-amber)',
           display: 'flex', alignItems: 'center', gap: '0.6rem'
         }}>
@@ -267,20 +282,35 @@ export default function Dashboard({ apiOnline }) {
           <code style={{ background: 'rgba(0,0,0,0.3)', padding: '0.15rem 0.5rem', borderRadius: 4, fontSize: '0.78rem', color: 'var(--text-primary)' }}>
             uvicorn main:app --reload --port 8000
           </code>
-        </div>
+        </motion.div>
       )}
 
       {/* Stat Cards */}
-      <div className="stat-grid">
+      <motion.div
+        className="stat-grid"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+      >
         <StatCard label="Security Score" value={data.score} unit="/100" color={getScoreColor(data.score)} icon="🛡" sub={`Grade ${data.grade} · yourdomain.com`} delay={0} />
         <StatCard label="Critical Issues" value={data.checks.filter(c => c.status === 'fail').length} color="var(--accent-red)" icon="⚠" sub={`${data.checks.filter(c => c.status === 'warn').length} warnings · ${data.checks.filter(c => c.status === 'pass').length} passed`} delay={1} />
         <StatCard label="Scans Today" value={12} color="var(--accent-cyan)" icon="⟳" sub="+3 from yesterday" delay={2} />
         <StatCard label="Blockchain Logs" value={logs.length} color="var(--accent-gold)" icon="⛓" sub="All confirmed on-chain" delay={3} />
-      </div>
+      </motion.div>
 
       {/* Row 1: Area Chart + Gauge */}
-      <div className="dashboard-grid" style={{ marginBottom: '1.25rem' }}>
-        <div className="card">
+      <motion.div
+        className="dashboard-grid"
+        style={{ marginBottom: '1.5rem' }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <motion.div
+          className="card"
+          whileHover={{ y: -4 }}
+          transition={{ duration: 0.3 }}
+        >
           <div className="card-header">
             <span className="card-title">Security Score — 7 Day Trend</span>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -293,37 +323,50 @@ export default function Dashboard({ apiOnline }) {
               <AreaChart data={SCORE_HISTORY} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#00D4FF" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#00D4FF" stopOpacity={0} />
+                    <stop offset="5%"  stopColor="#D4AF37" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#D4AF37" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="rgba(26,58,92,0.35)" strokeDasharray="4 4" />
-                <XAxis dataKey="date" tick={{ fill: '#4A6B8A', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 100]} tick={{ fill: '#4A6B8A', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <CartesianGrid stroke="rgba(212,175,55,0.10)" strokeDasharray="4 4" />
+                <XAxis dataKey="date" tick={{ fill: '#7A5050', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 100]} tick={{ fill: '#7A5050', fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<ChartTip />} />
                 <Area type="monotone" dataKey="score" name="Score"
-                  stroke="#00D4FF" strokeWidth={2.5}
+                  stroke="#D4AF37" strokeWidth={2.5}
                   fill="url(#sg)"
-                  dot={{ fill: '#00D4FF', r: 4, strokeWidth: 0 }}
-                  activeDot={{ r: 6, fill: '#00D4FF', stroke: '#050B18', strokeWidth: 2 }}
+                  dot={{ fill: '#D4AF37', r: 4, strokeWidth: 0 }}
+                  activeDot={{ r: 6, fill: '#D4AF37', stroke: '#050B18', strokeWidth: 2 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="card">
+        <motion.div
+          className="card"
+          whileHover={{ y: -4 }}
+          transition={{ duration: 0.3 }}
+        >
           <div className="card-header">
             <span className="card-title">Posture Score</span>
             <span className="tag tag-amber">yourdomain.com</span>
           </div>
           <ScoreGauge score={data.score} />
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Row 2: Checks + Breach + Logs */}
-      <div className="dashboard-grid">
-        <div className="card">
+      <motion.div
+        className="dashboard-grid"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <motion.div
+          className="card"
+          whileHover={{ y: -4 }}
+          transition={{ duration: 0.3 }}
+        >
           <div className="card-header">
             <span className="card-title">Last Scan Results</span>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -346,11 +389,15 @@ export default function Dashboard({ apiOnline }) {
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {/* Breach Chart */}
-          <div className="card">
+          <motion.div
+            className="card"
+            whileHover={{ y: -4 }}
+            transition={{ duration: 0.3 }}
+          >
             <div className="card-header">
               <span className="card-title">Threat Exposure Heuristics</span>
               <span className="tag tag-amber">CVE &amp; BREACH DB</span>
@@ -358,14 +405,14 @@ export default function Dashboard({ apiOnline }) {
             <div className="card-body" style={{ padding: '1rem' }}>
               <ResponsiveContainer width="100%" height={140}>
                 <LineChart data={BREACH_DATA} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                  <CartesianGrid stroke="rgba(26,58,92,0.35)" strokeDasharray="4 4" />
-                  <XAxis dataKey="date" tick={{ fill: '#4A6B8A', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fill: '#4A6B8A', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <CartesianGrid stroke="rgba(212,175,55,0.10)" strokeDasharray="4 4" />
+                  <XAxis dataKey="date" tick={{ fill: '#7A5050', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fill: '#7A5050', fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip content={<ChartTip />} />
                   <Line type="monotone" dataKey="count" name="Breaches"
                     stroke="#F59E0B" strokeWidth={2.5}
                     dot={{ fill: '#F59E0B', r: 4, strokeWidth: 0 }}
-                    activeDot={{ r: 6, fill: '#F59E0B', stroke: '#030712', strokeWidth: 2 }}
+                    activeDot={{ r: 6, fill: '#F59E0B', stroke: '#0A0005', strokeWidth: 2 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -377,10 +424,15 @@ export default function Dashboard({ apiOnline }) {
                 <span>⚠</span> 1 active exposure · HaveIBeenPwned &amp; DarkWeb Monitor
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Blockchain Logs */}
-          <div className="card" style={{ flex: 1 }}>
+          <motion.div
+            className="card"
+            style={{ flex: 1 }}
+            whileHover={{ y: -4 }}
+            transition={{ duration: 0.3 }}
+          >
             <div className="card-header">
               <span className="card-title">Immutable Audit Trail</span>
               <button
@@ -392,7 +444,7 @@ export default function Dashboard({ apiOnline }) {
                 style={{
                   fontSize: '0.72rem', padding: '0.2rem 0.6rem',
                   display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                  borderColor: 'rgba(251,191,36,0.35)', color: '#FBBF24'
+                  borderColor: 'rgba(212,175,55,0.35)', color: '#D4AF37'
                 }}
               >
                 <span>⛓</span> Explorer ↗
@@ -402,7 +454,7 @@ export default function Dashboard({ apiOnline }) {
               {logs.slice(0, 4).map(log => (
                 <div key={log.id} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '0.55rem 0.5rem', borderBottom: '1px solid rgba(26,58,92,0.25)',
+                  padding: '0.55rem 0.5rem', borderBottom: '1px solid rgba(212,175,55,0.08)',
                   fontSize: '0.8rem', gap: '0.75rem', transition: 'background 0.2s',
                   borderRadius: 4, cursor: 'pointer'
                 }}
@@ -410,10 +462,10 @@ export default function Dashboard({ apiOnline }) {
                     soundManager.playClick();
                     navigate('/dashboard/audit');
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,245,255,0.05)'}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,175,55,0.05)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                  <span className="mono" style={{ color: 'var(--accent-cyan)', fontSize: '0.75rem', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span className="mono" style={{ color: '#D4AF37', fontSize: '0.75rem', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {log.domain}
                   </span>
                   <span className="chain-badge" style={{ flexShrink: 0 }}>#{log.block}</span>
@@ -422,17 +474,17 @@ export default function Dashboard({ apiOnline }) {
               ))}
               <div style={{
                 marginTop: '0.65rem', padding: '0.4rem 0.6rem',
-                background: 'rgba(0,245,255,0.03)', border: '1px dashed rgba(0,245,255,0.18)',
+                background: 'rgba(212,175,55,0.03)', border: '1px dashed rgba(212,175,55,0.18)',
                 borderRadius: 6, fontSize: '0.68rem', fontFamily: 'var(--font-mono)',
                 color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between'
               }}>
                 <span>MERKLE: 0x4f82…d91a</span>
-                <span style={{ color: '#00FFA3' }}>secp256k1 ✓</span>
+                <span style={{ color: '#00C896' }}>secp256k1 ✓</span>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

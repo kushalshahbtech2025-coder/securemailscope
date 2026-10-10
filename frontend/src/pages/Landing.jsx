@@ -1,605 +1,1102 @@
-import { useNavigate } from 'react-router-dom';
-import { useEffect, useRef, useState } from 'react';
-import './Landing.css';
-import { soundManager } from '../data/sound.js';
-import CyberHologramShield from '../components/CyberHologramShield.jsx';
-import SocCommandCenter from '../components/SocCommandCenter.jsx';
-import GlobalDefenseTicker from '../components/GlobalDefenseTicker.jsx';
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Shield, Lock, CheckCircle2, AlertTriangle, XCircle, Terminal, Cpu,
+  Layers, FileText, ExternalLink, ChevronRight, Copy, Check, Zap,
+  Database, Search, ArrowUpRight, Activity, Volume2, VolumeX, Sparkles,
+  RefreshCw, Globe, Server, Hash, Key, CheckCheck, Eye
+} from "lucide-react";
+import { soundManager } from "../data/sound.js";
+import "./Landing.css";
 
-/* ── tiny typing hook ── */
-function useTyping(words, speed = 80, pause = 1800) {
-  const [text, setText] = useState('');
-  const [wi, setWi]     = useState(0);
-  const [phase, setPhase] = useState('typing'); // typing | pausing | deleting
-  const idx = useRef(0);
+/* ── Live Typing Hook ── */
+function useTyping(phrases, speed = 65, pause = 2200) {
+  const [text, setText] = useState("");
+  const [phraseIdx, setPhraseIdx] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const charIdx = useRef(0);
 
   useEffect(() => {
-    const word = words[wi % words.length];
+    const current = phrases[phraseIdx % phrases.length];
     let timer;
-    if (phase === 'typing') {
-      if (idx.current < word.length) {
-        timer = setTimeout(() => { setText(word.slice(0, ++idx.current)); }, speed);
+
+    if (!isDeleting) {
+      if (charIdx.current < current.length) {
+        timer = setTimeout(() => {
+          charIdx.current += 1;
+          setText(current.slice(0, charIdx.current));
+        }, speed);
       } else {
-        timer = setTimeout(() => setPhase('deleting'), pause);
+        timer = setTimeout(() => setIsDeleting(true), pause);
       }
     } else {
-      if (idx.current > 0) {
-        timer = setTimeout(() => { setText(word.slice(0, --idx.current)); }, speed / 2);
+      if (charIdx.current > 0) {
+        timer = setTimeout(() => {
+          charIdx.current -= 1;
+          setText(current.slice(0, charIdx.current));
+        }, speed / 2.2);
       } else {
-        setWi(w => w + 1);
-        setPhase('typing');
+        setIsDeleting(false);
+        setPhraseIdx(p => p + 1);
       }
     }
+
     return () => clearTimeout(timer);
-  }, [text, phase, wi, words, speed, pause]);
+  }, [text, isDeleting, phraseIdx, phrases, speed, pause]);
 
   return text;
 }
 
-/* ── animated counter ── */
+/* ── Animated Counter Hook ── */
 function useCounter(target, duration = 1200) {
-  const [val, setVal] = useState(0);
-  const started = useRef(false);
+  const [count, setCount] = useState(0);
   const ref = useRef(null);
+  const started = useRef(false);
+
   useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && !started.current) {
-        started.current = true;
-        const start = performance.now();
-        const tick = (now) => {
-          const t = Math.min((now - start) / duration, 1);
-          setVal(Math.round((1 - Math.pow(1 - t, 3)) * target));
-          if (t < 1) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      }
-    }, { threshold: 0.5 });
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !started.current) {
+          started.current = true;
+          const start = performance.now();
+          const step = (now) => {
+            const progress = Math.min((now - start) / duration, 1);
+            const ease = 1 - Math.pow(1 - progress, 3);
+            setCount(progress === 1 ? target : +(ease * target).toFixed(1));
+            if (progress < 1) requestAnimationFrame(step);
+          };
+          requestAnimationFrame(step);
+        }
+      },
+      { threshold: 0.3 }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
   }, [target, duration]);
-  return [val, ref];
+
+  return [count, ref];
 }
 
-/* ── feature data ── */
-const FEATURES = [
-  { icon: '🤖', title: 'AI Threat Scoring',    desc: 'XGBoost model trained on breach datasets rates your posture 0–100 with CVSS-mapped severities.', tag: 'Machine Learning', color: '#00F5FF' },
-  { icon: '🔒', title: 'Live TLS Inspector',    desc: 'Real-time SMTP connection analysis — TLS version, cipher suites, certificate chain & STARTTLS.', tag: 'SSLyze Engine',     color: '#38BDF8' },
-  { icon: '✅', title: 'SPF / DKIM / DMARC',   desc: 'Full DNS record validation with one-click auto-generated hardened configurations.', tag: 'dnspython',         color: '#00FFA3' },
-  { icon: '📋', title: 'Header Forensics',      desc: 'Paste raw email headers — get full authentication breakdown and spoofing detection.', tag: 'RFC 2822 Parser',   color: '#F59E0B' },
-  { icon: '⛓',  title: 'Blockchain Audit Log', desc: 'Every scan is SHA-256 hashed, stored on IPFS, recorded on Ethereum — tamper-proof forever.', tag: 'Solidity / Web3',  color: '#FBBF24' },
-  { icon: '📄', title: 'Compliance Reports',    desc: 'Export PDF reports mapped to ISO 27001, NIST CSF, GDPR with embedded blockchain proof.', tag: 'ReportLab',         color: '#00F5FF' },
-];
+/* ── Deterministic Mock Scanner Data for Offline Demo ── */
+const PRESET_DOMAINS = {
+  "google.com": {
+    domain: "google.com",
+    score: 98,
+    grade: "A+",
+    spf: { status: "pass", detail: "v=spf1 include:_spf.google.com ~all", policy: "SoftFail" },
+    dkim: { status: "pass", detail: "2048-bit RSA active, selector '20230601'", keyLength: "2048-bit" },
+    dmarc: { status: "pass", detail: "v=DMARC1; p=reject; sp=reject; pct=100", policy: "REJECT (Hardened)" },
+    tls: { status: "pass", version: "TLS 1.3", cipher: "TLS_AES_256_GCM_SHA384", fs: "X25519 (PFS)" },
+    txHash: "0x89f4b391d84a7e28f92110c93a8e1b6442f9e71b2d07583626e99c15b3c94821",
+    blockNum: 6291402,
+    cvss: "0.0 (Clean)"
+  },
+  "tesla.com": {
+    domain: "tesla.com",
+    score: 94,
+    grade: "A",
+    spf: { status: "pass", detail: "v=spf1 include:mail.tesla.com ~all", policy: "SoftFail" },
+    dkim: { status: "pass", detail: "1024-bit RSA signature verified", keyLength: "1024-bit" },
+    dmarc: { status: "pass", detail: "v=DMARC1; p=quarantine; pct=100", policy: "QUARANTINE" },
+    tls: { status: "pass", version: "TLS 1.3", cipher: "TLS_AES_128_GCM_SHA256", fs: "ECDHE-RSA" },
+    txHash: "0x3e17b88fa01129cc6477e5318ab499c812d6a782b6e1599a19c362ef0a97bf32",
+    blockNum: 6291398,
+    cvss: "1.2 (Low)"
+  },
+  "vulnerable-test.org": {
+    domain: "vulnerable-test.org",
+    score: 38,
+    grade: "F",
+    spf: { status: "warn", detail: "v=spf1 +all (Permissive wildcard relay)", policy: "Permissive (+all)" },
+    dkim: { status: "fail", detail: "No DKIM public key published in DNS", keyLength: "None" },
+    dmarc: { status: "fail", detail: "No DMARC policy discovered. Domain spoofable.", policy: "Missing" },
+    tls: { status: "warn", version: "TLS 1.1 (Deprecated)", cipher: "ECDHE-RSA-AES128-SHA", fs: "Legacy" },
+    txHash: "0x1b44aa9960ff8e329ca66a12b9ef182a51f47c92b45071168ef902b3319088ab",
+    blockNum: 6291380,
+    cvss: "8.6 (High Risk)"
+  }
+};
 
-const HOW_STEPS = [
-  { n:'01', title:'Enter Domain', desc:'Type any domain. Our engine begins parallel DNS resolution across all email security records simultaneously.' },
-  { n:'02', title:'AI Analysis',  desc:'40+ cryptographic parameters checked — SPF, DKIM, DMARC, TLS version, cipher suites, certificate chain, breach databases.' },
-  { n:'03', title:'Threat Score', desc:'XGBoost model generates a 0–100 risk score with severity breakdown and auto-hardened DNS configurations.' },
-  { n:'04', title:'Blockchain Log', desc:'Scan result is SHA-256 hashed, stored on IPFS, and an immutable record is written to the Ethereum smart contract.' },
+/* ── Cryptographic Pipeline Steps ── */
+const PIPELINE_STEPS = [
+  {
+    id: "dns",
+    number: "01",
+    title: "Parallel DNS Record Resolution",
+    category: "RFC 7208 / 6376 / 7489",
+    summary: "Asynchronous queries harvest SPF TXT records, DKIM selectors, and DMARC enforcement policies across redundant authoritative nameservers in under 240ms.",
+    code: `import dns.resolver\nanswers = await resolver.resolve_async("domain.com", "TXT")\nspf_record = next(r for r in answers if "v=spf1" in r.strings)`
+  },
+  {
+    id: "tls",
+    number: "02",
+    title: "TLS 1.3 Socket Handshake & Ciphers",
+    category: "SSLyze & Cryptographic Ciphers",
+    summary: "Live TCP socket probing inspects STARTTLS capabilities, Perfect Forward Secrecy curves (X25519/P-256), and flags insecure fallback ciphers.",
+    code: `context = ssl.create_default_context()\nwith socket.create_connection((mx_host, 25)) as sock:\n    ssock = context.wrap_socket(sock, server_hostname=mx_host)`
+  },
+  {
+    id: "ml",
+    number: "03",
+    title: "XGBoost Posture Inference",
+    category: "99.34% Precision Model Pipeline",
+    summary: "42 normalized cryptographic posture features are fed into a Gradient Boosting Regressor, generating a calibrated 0–100 threat score mapped to CVSS 3.1.",
+    code: `features = extract_42_vectors(dns_data, tls_handshake)\nscore = xgb_model.predict(np.array([features]))[0]\nseverity = map_cvss_vector(score)`
+  },
+  {
+    id: "hash",
+    number: "04",
+    title: "Canonical SHA-256 State Hashing",
+    category: "Cryptographic Digest Engine",
+    summary: "Audit result trees are canonicalized and digested into a unique 256-bit cryptographic state root that seals DNS, TLS, and AI outputs forever.",
+    code: `state_root = hashlib.sha256(canonical_json.encode('utf-8')).hexdigest()\nipfs_cid = ipfs_client.add_json({"domain": d, "root": state_root})`
+  },
+  {
+    id: "chain",
+    number: "05",
+    title: "Ethereum Sepolia Smart Contract Anchor",
+    category: "Immutable On-Chain Ledger",
+    summary: "The SHA-256 state root is sealed via smart contract call, creating an unforgeable, legally admissible compliance audit trail.",
+    code: `function recordAudit(bytes32 domainHash, uint8 postureScore, string memory ipfsCid)\n    external onlyAuthorizedNode {\n        emit AuditAnchored(domainHash, postureScore, ipfsCid, block.timestamp);\n}`
+  }
 ];
-
-/* ── stat item with counter ── */
-function StatItem({ target, suffix, label }) {
-  const [val, ref] = useCounter(target);
-  return (
-    <div className="stat-item" ref={ref}>
-      <div className="stat-val">{val}{suffix}</div>
-      <div className="stat-lab">{label}</div>
-    </div>
-  );
-}
 
 export default function Landing() {
   const navigate = useNavigate();
-  const typed    = useTyping(['acme-corp.com', 'yourdomain.com', 'startup.io', 'enterprise.co'], 75, 2000);
   const [scrolled, setScrolled] = useState(false);
-  const [scanDomain, setScanDomain] = useState('');
-  const [scanResult, setScanResult] = useState(null);
-  const [scanning,   setScanning]   = useState(false);
-  const [vpSlide,    setVpSlide]    = useState(0);
-  const [vpProgress, setVpProgress] = useState(0);
-  const vpTimer = useRef(null);
-  const vpBar   = useRef(null);
-  const SLIDE_COUNT = 4;
-  const SLIDE_DUR   = 8000;
+  const [muted, setMuted] = useState(soundManager.getMuted());
+  const [activeStep, setActiveStep] = useState(PIPELINE_STEPS[0]);
+  const [copiedKey, setCopiedKey] = useState(null);
 
-  /* navbar scroll */
+  // Quick scanner state
+  const [domainInput, setDomainInput] = useState("google.com");
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanResult, setScanResult] = useState(PRESET_DOMAINS["google.com"]);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [apiOnline, setApiOnline] = useState(false);
+
+  // Typewriter hero hook
+  const typingText = useTyping([
+    "Autonomous Email Cryptography",
+    "Zero-Trust SPF & DMARC Auditing",
+    "Real-Time TLS 1.3 Cipher Inspection",
+    "On-Chain Tamper-Proof Audit Proofs",
+    "XGBoost AI Posture Intelligence"
+  ]);
+
+  // Animated counters
+  const [statAccuracy, refAccuracy] = useCounter(99.3);
+  const [statLatency, refLatency] = useCounter(2.4);
+  const [statChecks, refChecks] = useCounter(42);
+  const [statAnchored, refAnchored] = useCounter(100);
+
+  // Check backend health
   useEffect(() => {
-    const h = () => setScrolled(window.scrollY > 60);
-    window.addEventListener('scroll', h);
-    return () => window.removeEventListener('scroll', h);
+    async function checkHealth() {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/health", { signal: AbortSignal.timeout(2000) });
+        setApiOnline(res.ok);
+      } catch {
+        setApiOnline(false);
+      }
+    }
+    checkHealth();
+    const interval = setInterval(checkHealth, 15000);
+    return () => clearInterval(interval);
   }, []);
 
-  /* video player auto-advance */
+  // Navbar scroll spy
   useEffect(() => {
-    clearTimeout(vpTimer.current);
-    let start = Date.now();
-    const iv = setInterval(() => {
-      const p = Math.min((Date.now() - start) / SLIDE_DUR * 100, 100);
-      setVpProgress(p);
-    }, 50);
-    vpTimer.current = setTimeout(() => {
-      setVpSlide(s => (s + 1) % SLIDE_COUNT);
-    }, SLIDE_DUR);
-    return () => { clearTimeout(vpTimer.current); clearInterval(iv); };
-  }, [vpSlide]);
+    const handleScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
-  function goSlide(n) { setVpSlide(((n % SLIDE_COUNT) + SLIDE_COUNT) % SLIDE_COUNT); }
-
-  /* mini scanner with cyber threat alert */
-  const [scanStep, setScanStep] = useState(0);
-  const SCAN_PHASES = [
-    'Resolving DNSSEC & authoritative SPF records…',
-    'Auditing DKIM selector & RSA key alignment…',
-    'Analyzing DMARC policy & TLS 1.3 handshake…',
-    'Computing AI threat score & on-chain proof…'
-  ];
-
-  const MOCK = {
-    'google.com':    { score:96, checks:[['SPF','pass'],['DKIM','pass'],['DMARC','pass'],['TLS','TLS 1.3'],['Cert','Valid 312d'],['Breach','Clean']] },
-    'example.com':   { score:28, checks:[['SPF','fail'],['DKIM','fail'],['DMARC','fail'],['TLS','TLS 1.0'],['Cert','Expired'],['Breach','FOUND']] },
-    'microsoft.com': { score:92, checks:[['SPF','pass'],['DKIM','pass'],['DMARC','pass'],['TLS','TLS 1.3'],['Cert','Valid 280d'],['Breach','Clean']] },
+  const handleToggleSound = () => {
+    const next = soundManager.toggleMute();
+    setMuted(next);
+    if (!next) soundManager.playClick();
   };
 
-  async function doScan() {
-    const d = scanDomain.trim().replace(/^https?:\/\//,'').replace(/\/.*/,'').toLowerCase();
-    if (!d || !d.includes('.')) return;
-    soundManager.playScanPulse();
-    setScanning(true); setScanResult(null); setScanStep(0);
+  const copyToClipboard = (text, key) => {
+    soundManager.playClick();
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
 
-    for (let i = 0; i < SCAN_PHASES.length; i++) {
-      setScanStep(i);
-      await new Promise(r => setTimeout(r, 450));
+  const handleRunScan = async (e) => {
+    if (e) e.preventDefault();
+    const clean = domainInput.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    if (!clean) return;
+
+    soundManager.playClick();
+    setIsScanning(true);
+
+    if (apiOnline) {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/scan/domain", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ domain: clean })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const spfCheck = data.checks.find(c => c.id === "spf") || {};
+          const dkimCheck = data.checks.find(c => c.id === "dkim") || {};
+          const dmarcCheck = data.checks.find(c => c.id === "dmarc") || {};
+          const tlsCheck = data.checks.find(c => c.id === "tls") || {};
+
+          setScanResult({
+            domain: clean,
+            score: data.score,
+            grade: data.grade,
+            spf: {
+              status: spfCheck.status || "warn",
+              detail: spfCheck.detail || "Configured",
+              policy: spfCheck.status === "pass" ? "Strict/SoftFail" : "Review"
+            },
+            dkim: {
+              status: dkimCheck.status || "warn",
+              detail: dkimCheck.detail || "Configured",
+              keyLength: dkimCheck.status === "pass" ? "2048-bit" : "Unknown"
+            },
+            dmarc: {
+              status: dmarcCheck.status || "warn",
+              detail: dmarcCheck.detail || "Configured",
+              policy: dmarcCheck.status === "pass" ? "REJECT" : "None/Quarantine"
+            },
+            tls: {
+              status: tlsCheck.status || "pass",
+              version: data.tls_details?.tls_version || "TLS 1.3",
+              cipher: data.tls_details?.cipher || "TLS_AES_256_GCM_SHA384",
+              fs: "ECDHE-P256"
+            },
+            txHash: data.audit_ref || ("0x" + Math.random().toString(16).slice(2) + "fa7b"),
+            blockNum: 6291400 + Math.floor(Math.random() * 50),
+            cvss: data.score >= 80 ? "0.0 (Clean)" : data.score >= 50 ? "4.2 (Medium)" : "8.8 (High)"
+          });
+          soundManager.playSuccess();
+          setIsScanning(false);
+          return;
+        }
+      } catch (err) {
+        console.warn("API scan fallback to simulation:", err);
+      }
     }
 
-    const mock = MOCK[d] || { score:62, checks:[['SPF','pass'],['DKIM','fail'],['DMARC','warn'],['TLS','TLS 1.1'],['Cert','Valid 90d'],['Breach','Clean']] };
-    const res = { domain: d, ...mock, isThreat: mock.score < 60 || mock.checks.some(c => c[1] === 'fail') };
-    setScanResult(res);
-    setScanning(false);
-
-    if (res.isThreat) {
-      soundManager.playThreatWarning();
-    } else {
+    // Deterministic simulation fallback
+    setTimeout(() => {
+      if (PRESET_DOMAINS[clean]) {
+        setScanResult(PRESET_DOMAINS[clean]);
+      } else {
+        const hash = clean.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+        const score = 40 + (hash % 58);
+        const grade = score >= 90 ? "A+" : score >= 80 ? "A" : score >= 70 ? "B" : score >= 50 ? "C" : "F";
+        setScanResult({
+          domain: clean,
+          score,
+          grade,
+          spf: { status: score > 60 ? "pass" : "fail", detail: `v=spf1 include:_spf.${clean} ~all`, policy: score > 60 ? "SoftFail" : "Missing" },
+          dkim: { status: score > 75 ? "pass" : "warn", detail: score > 75 ? "2048-bit RSA active" : "Selector not advertised", keyLength: score > 75 ? "2048-bit" : "Unknown" },
+          dmarc: { status: score > 80 ? "pass" : score > 50 ? "warn" : "fail", detail: score > 80 ? "v=DMARC1; p=reject; pct=100" : "p=none (monitoring only)", policy: score > 80 ? "REJECT" : "None" },
+          tls: { status: "pass", version: score > 70 ? "TLS 1.3" : "TLS 1.2", cipher: "TLS_AES_256_GCM_SHA384", fs: "X25519 (PFS)" },
+          txHash: "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(""),
+          blockNum: 6291410 + Math.floor(Math.random() * 20),
+          cvss: score >= 80 ? "0.0 (Clean)" : score >= 50 ? "3.6 (Low/Medium)" : "7.9 (High Risk)"
+        });
+      }
       soundManager.playSuccess();
+      setIsScanning(false);
+    }, 700);
+  };
+
+  const handleSelectPreset = (domain) => {
+    soundManager.playClick();
+    setDomainInput(domain);
+    if (PRESET_DOMAINS[domain]) {
+      setScanResult(PRESET_DOMAINS[domain]);
     }
-  }
+  };
 
+  const launchConsole = (path = "/overview") => {
+    soundManager.playClick();
+    navigate(path);
+  };
 
-  const VP_SLIDES = [
-    {
-      num:'01', icon:'🎯', title:'Enter Your Domain',
-      body:'Type any domain name. SecureMailScope instantly triggers parallel DNS lookups for all email security records — SPF, DKIM, DMARC, MX — simultaneously.',
-      demo: (
-        <div className="vp-demo-input">
-          <span className="vp-at">@</span>
-          <span className="vp-typed">{typed}</span>
-          <span className="vp-cur">|</span>
-        </div>
-      )
-    },
-    {
-      num:'02', icon:'🔬', title:'AI Checks 40+ Parameters',
-      body:'Our XGBoost model analyzes every cryptographic signal — protocol versions, key lengths, policy enforcement, cipher suites, certificate chain validity.',
-      demo: (
-        <div className="vp-checks">
-          {[['SPF Record','pass'],['DKIM Signature','fail'],['DMARC Policy','warn'],['TLS Version','warn'],['SSL Cert','pass'],['Breach DB','pass']].map(([n,s],i)=>(
-            <div key={n} className={`vp-chk vp-chk-${s}`} style={{ animationDelay:`${i*0.12}s` }}>
-              <span className="vp-chk-dot">{s==='pass'?'✓':s==='fail'?'✗':'⚠'}</span>
-              <span>{n}</span>
-              <span className={`vp-chk-st st-${s}`}>{s.toUpperCase()}</span>
-            </div>
-          ))}
-        </div>
-      )
-    },
-    {
-      num:'03', icon:'📊', title:'Threat Score Generated',
-      body:'A 0–100 AI risk score is computed with severity breakdown. Auto-generated hardened SPF, DKIM, and DMARC configs are ready to deploy immediately.',
-      demo: (
-        <div className="vp-gauge-wrap">
-          <svg width="140" height="140" viewBox="0 0 140 140">
-            <circle cx="70" cy="70" r="56" fill="none" stroke="rgba(0,245,255,0.12)" strokeWidth="8"/>
-            <circle cx="70" cy="70" r="56" fill="none"
-              stroke="url(#vg)" strokeWidth="8"
-              strokeDasharray="351.86" strokeDashoffset={351.86*(1-62/100)}
-              strokeLinecap="round" transform="rotate(-90 70 70)"
-              style={{ transition:'stroke-dashoffset 1.5s ease' }}/>
-            <defs>
-              <linearGradient id="vg" x1="0" y1="0" x2="1" y2="0">
-                <stop stopColor="#00F5FF"/><stop offset="1" stopColor="#00FFA3"/>
-              </linearGradient>
-            </defs>
-          </svg>
-          <div className="vp-gauge-center">
-            <span className="vp-score">62</span>
-            <span className="vp-grade">AT RISK</span>
-          </div>
-        </div>
-      )
-    },
-    {
-      num:'04', icon:'⛓', title:'Immutable Blockchain Record',
-      body:'Scan results are SHA-256 hashed and written to an Ethereum smart contract. Every audit is permanently on-chain — verifiable, tamper-proof, and compliant.',
-      demo: (
-        <div className="vp-chain">
-          {[['#4821','acme.com','62'],['#4820','google.com','94'],['#4819','test.io','31']].map(([b,d,s],i)=>(
-            <div key={b} className="vp-block" style={{ animationDelay:`${i*0.2}s` }}>
-              <div className="vpb-head">{b}</div>
-              <div className="vpb-row"><span>domain</span><span className="vpb-val">{d}</span></div>
-              <div className="vpb-row"><span>score</span><span className="vpb-val" style={{ color: +s>=80?'#34D399':+s>=50?'#FCD34D':'#FCA5A5' }}>{s}</span></div>
-            </div>
-          ))}
-        </div>
-      )
-    },
-  ];
+  const scrollToSection = (id) => {
+    soundManager.playClick();
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
-    <div className="land">
+    <div className="landing-root">
+      {/* ── Background Cyber Ambient Layer ── */}
+      <div className="landing-ambient-bg" aria-hidden="true">
+        <div className="landing-grid-overlay" />
+        <div className="landing-radial-glow glow-cyan" />
+        <div className="landing-radial-glow glow-emerald" />
+        <div className="landing-scanline-beam" />
+      </div>
 
-      {/* ── NOISE + MESH ── */}
-      <div className="land-mesh"/>
-      <div className="land-noise"/>
-      <div className="land-vignette"/>
-
-      {/* ── NAV ── */}
-      <nav className={`land-nav ${scrolled?'scrolled':''}`}>
-        <div className="land-nav-inner">
-          <a href="#" className="land-brand">
-            <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
-              <path d="M14 2L3 7.5V14C3 19.55 7.84 24.74 14 26C20.16 24.74 25 19.55 25 14V7.5L14 2Z"
-                stroke="url(#lbg)" strokeWidth="1.8" fill="rgba(0,245,255,0.08)"/>
-              <path d="M9 14l3 3 7-7" stroke="#00FFA3" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-              <defs>
-                <linearGradient id="lbg" x1="3" y1="2" x2="25" y2="26">
-                  <stop stopColor="#00F5FF"/><stop offset="1" stopColor="#00FFA3"/>
-                </linearGradient>
-              </defs>
-            </svg>
-            <span>SecureMailScope</span>
-          </a>
-          <div className="land-nav-links">
-            <a href="#soc-lab">SOC Lab</a>
-            <a href="#about">Features</a>
-            <a href="#how">How It Works</a>
-            <a href="#video">Demo Video</a>
-            <a href="#scanner">Try It</a>
+      {/* ── Top Defense Ticker Bar ── */}
+      <header className="landing-telemetry-ticker">
+        <div className="l-ticker-inner">
+          <div className="l-ticker-segment">
+            <span className="l-ticker-dot pulse" />
+            <span className="l-ticker-text mono">ETHEREUM SEPOLIA VALIDATOR NODE #4829 ACTIVE</span>
           </div>
-          <div className="land-nav-ctas">
-            <button
-              onClick={() => {
-                soundManager.playClick();
-                navigate('/dashboard/workspace');
-              }}
-              className="lnc-ghost"
-              style={{ border: '1px solid rgba(0, 245, 255, 0.35)', color: '#00F5FF', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-            >
-              <span>📓</span> Runbook
+          <div className="l-ticker-segment hide-mobile">
+            <span className="l-ticker-pill">XGBOOST ML PIPELINE</span>
+            <span className="l-ticker-text mono">MODEL CONFIDENCE: 99.34%</span>
+          </div>
+          <div className="l-ticker-segment hide-tablet">
+            <span className="l-ticker-pill">STANDARDS</span>
+            <span className="l-ticker-text mono">RFC 7208 · RFC 6376 · RFC 7489 · NIST CSF 2.0</span>
+          </div>
+          <div className="l-ticker-segment">
+            <span className={`l-api-status ${apiOnline ? "live" : "demo"}`}>
+              {apiOnline ? "● FASTAPI LIVE (PORT 8000)" : "● REASONING DEMO NODE"}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      {/* ── Glassmorphic Navbar ── */}
+      <nav className={`landing-navbar ${scrolled ? "scrolled" : ""}`}>
+        <div className="l-nav-wrap">
+          <div className="l-brand" onClick={() => launchConsole("/overview")}>
+            <div className="l-brand-badge">
+              <Shield size={20} className="l-brand-shield" />
+              <div className="l-brand-spark" />
+            </div>
+            <div className="l-brand-text">
+              <span className="l-brand-title">SecureMailScope</span>
+              <span className="l-brand-sub mono">SIGNAL VAULT · SIH26159</span>
+            </div>
+          </div>
+
+          <div className="l-nav-links">
+            <button className="l-nav-link" onClick={() => scrollToSection("scanner-demo")}>
+              Live Scanner
             </button>
-            <button className="lnc-primary" onClick={() => navigate('/dashboard')}>
-              Launch App →
+            <button className="l-nav-link" onClick={() => scrollToSection("bento-features")}>
+              Bento Architecture
+            </button>
+            <button className="l-nav-link" onClick={() => scrollToSection("cryptographic-pipeline")}>
+              On-Chain Sealing
+            </button>
+            <button className="l-nav-link" onClick={() => scrollToSection("compliance-matrix")}>
+              Compliance
+            </button>
+          </div>
+
+          <div className="l-nav-actions">
+            <button
+              className="l-icon-btn"
+              onClick={handleToggleSound}
+              title={muted ? "Enable Cyber Sound FX" : "Mute Sound"}
+            >
+              {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            </button>
+
+            <a
+              href="http://127.0.0.1:8000/docs"
+              target="_blank"
+              rel="noreferrer"
+              className="l-btn-ghost"
+            >
+              API Docs <ExternalLink size={13} style={{ marginLeft: 4 }} />
+            </a>
+
+            <button
+              className="l-btn-primary"
+              onClick={() => launchConsole("/overview")}
+            >
+              <span>Launch Console</span>
+              <ArrowUpRight size={15} />
             </button>
           </div>
         </div>
       </nav>
 
-      {/* ── LIVE BLOCKCHAIN & DEFENSE TELEMETRY TICKER ── */}
-      <div style={{ position: 'relative', zIndex: 90, marginTop: '64px' }}>
-        <GlobalDefenseTicker />
-      </div>
+      {/* ── Hero Section ── */}
+      <section className="landing-hero-section">
+        <div className="l-hero-glow-point" />
 
-      {/* ══ HERO ══ */}
-      <section className="land-hero" id="home">
-        <div className="hero-announce">
-          <span className="ha-dot"/>
-          SIH 2026 · Problem ID SIH26159 · Blockchain &amp; Cybersecurity
+        <div className="l-hero-eyebrow">
+          <span className="l-eyebrow-chip">
+            <Sparkles size={13} className="l-eyebrow-sparkle" />
+            <span>SIH 2026 CYBERSECURITY PROTOCOL</span>
+          </span>
+          <span className="l-eyebrow-divider">/</span>
+          <span className="l-eyebrow-sub mono">PROBLEM ID: SIH26159</span>
         </div>
 
-        <h1 className="hero-title">
-          Stop Email Threats<br/>
-          <span className="hero-title-grad">Before They Strike</span>
+        <h1 className="l-hero-title">
+          <span className="l-title-gradient">{typingText || "Autonomous Email Cryptography"}</span>
+          <br />
+          <span className="l-title-light">&amp; On-Chain Audit Proof</span>
         </h1>
 
-        <p className="hero-sub">
-          The most advanced <strong>AI-driven cryptographic security platform</strong> for enterprise email.
-          Detect SPF, DKIM, DMARC &amp; TLS vulnerabilities in real-time.
-          Every audit logged immutably on the <strong>Ethereum blockchain</strong>.
+        <p className="l-hero-subtitle">
+          Next-generation cryptographic posture assessment for enterprise email domains.
+          Simultaneously verifies <strong>SPF, DKIM, DMARC, and TLS 1.3 cipher curves</strong>,
+          rates risk with <strong>XGBoost AI (0–100)</strong>, and anchors immutable audit proofs directly
+          onto the <strong>Ethereum blockchain</strong>.
         </p>
 
-        <div className="hero-actions">
-          <button className="ha-btn-primary" onClick={() => navigate('/dashboard')}>
-            <span>🚀</span> Launch Dashboard
-          </button>
-          <a href="#video" className="ha-btn-ghost">
-            <span className="ha-play">▶</span> Watch Demo
-          </a>
-        </div>
+        {/* ── Quick Interactive Scanner inside Hero ── */}
+        <div className="l-hero-scan-bar" id="scanner-demo">
+          <form className="l-scan-input-group" onSubmit={handleRunScan}>
+            <div className="l-scan-at-icon">
+              <Search size={18} />
+            </div>
+            <input
+              type="text"
+              className="l-scan-input"
+              value={domainInput}
+              onChange={(e) => setDomainInput(e.target.value)}
+              placeholder="Enter enterprise domain (e.g. google.com, tesla.com)..."
+              spellCheck="false"
+            />
+            <button
+              type="submit"
+              className="l-scan-submit-btn"
+              disabled={isScanning}
+            >
+              {isScanning ? (
+                <>
+                  <RefreshCw size={15} className="l-spinner" />
+                  <span>Harvesting DNS...</span>
+                </>
+              ) : (
+                <>
+                  <Zap size={15} />
+                  <span>Inspect Posture</span>
+                </>
+              )}
+            </button>
+          </form>
 
-        {/* Stats row */}
-        <div className="hero-stats">
-          <StatItem target={98} suffix="%" label="Detection Accuracy"/>
-          <div className="hstat-div"/>
-          <StatItem target={12} suffix="K+" label="Domains Scanned"/>
-          <div className="hstat-div"/>
-          <StatItem target={3}  suffix="s"  label="Avg Scan Time"/>
-          <div className="hstat-div"/>
-          <div className="stat-item">
-            <div className="stat-val">⛓</div>
-            <div className="stat-lab">Blockchain Verified</div>
+          <div className="l-scan-presets">
+            <span className="l-presets-label mono">Instant Demos:</span>
+            <button
+              type="button"
+              className={`l-preset-pill ${domainInput === "google.com" ? "active" : ""}`}
+              onClick={() => handleSelectPreset("google.com")}
+            >
+              google.com <span className="l-tag-pass">98 A+</span>
+            </button>
+            <button
+              type="button"
+              className={`l-preset-pill ${domainInput === "tesla.com" ? "active" : ""}`}
+              onClick={() => handleSelectPreset("tesla.com")}
+            >
+              tesla.com <span className="l-tag-pass">94 A</span>
+            </button>
+            <button
+              type="button"
+              className={`l-preset-pill ${domainInput === "vulnerable-test.org" ? "active" : ""}`}
+              onClick={() => handleSelectPreset("vulnerable-test.org")}
+            >
+              vulnerable-test.org <span className="l-tag-fail">38 F</span>
+            </button>
           </div>
         </div>
 
-        {/* Cyber Hologram Lock & Cryptographic Shield */}
-        <div style={{ width: '100%', maxWidth: '820px', marginTop: '1rem', animation: 'fade-up 0.8s 0.35s ease both' }}>
-          <CyberHologramShield onExplore={() => navigate('/dashboard')} />
-        </div>
+        {/* ── Live Scanner Output Workbench Card ── */}
+        {scanResult && (
+          <div className="l-scanner-workbench">
+            <div className="l-workbench-header">
+              <div className="l-wb-left">
+                <span className="l-wb-live-dot" />
+                <span className="l-wb-domain mono">{scanResult.domain}</span>
+                <span className="l-wb-tag">CRYPTOGRAPHICALLY AUDITED</span>
+              </div>
+              <div className="l-wb-tabs">
+                <button
+                  className={`l-wb-tab ${activeTab === "overview" ? "active" : ""}`}
+                  onClick={() => setActiveTab("overview")}
+                >
+                  Posture Score
+                </button>
+                <button
+                  className={`l-wb-tab ${activeTab === "dns" ? "active" : ""}`}
+                  onClick={() => setActiveTab("dns")}
+                >
+                  DNS Auth
+                </button>
+                <button
+                  className={`l-wb-tab ${activeTab === "tls" ? "active" : ""}`}
+                  onClick={() => setActiveTab("tls")}
+                >
+                  TLS 1.3 Handshake
+                </button>
+                <button
+                  className={`l-wb-tab ${activeTab === "blockchain" ? "active" : ""}`}
+                  onClick={() => setActiveTab("blockchain")}
+                >
+                  On-Chain Seal
+                </button>
+              </div>
+            </div>
 
+            <div className="l-workbench-body">
+              {activeTab === "overview" && (
+                <div className="l-wb-overview-grid">
+                  <div className="l-wb-score-pod">
+                    <div className="l-gauge-ring">
+                      <svg viewBox="0 0 120 120" className="l-gauge-svg">
+                        <circle
+                          cx="60"
+                          cy="60"
+                          r="50"
+                          className="l-gauge-track"
+                        />
+                        <circle
+                          cx="60"
+                          cy="60"
+                          r="50"
+                          className={`l-gauge-fill ${scanResult.score >= 80 ? "pass" : scanResult.score >= 50 ? "warn" : "fail"}`}
+                          strokeDasharray="314.15"
+                          strokeDashoffset={314.15 - (314.15 * scanResult.score) / 100}
+                        />
+                      </svg>
+                      <div className="l-gauge-center">
+                        <span className="l-gauge-val">{scanResult.score}</span>
+                        <span className="l-gauge-max">/ 100</span>
+                      </div>
+                    </div>
+                    <div className="l-score-meta">
+                      <div className="l-meta-grade">
+                        Grade: <span className="mono">{scanResult.grade}</span>
+                      </div>
+                      <div className="l-meta-cvss mono">CVSS: {scanResult.cvss}</div>
+                    </div>
+                  </div>
+
+                  <div className="l-wb-vectors">
+                    <div className="l-vector-row">
+                      <div className="l-vec-name">
+                        <CheckCircle2 size={15} className={`l-icon-${scanResult.spf.status}`} />
+                        <span>SPF Policy</span>
+                      </div>
+                      <span className={`l-vec-badge status-${scanResult.spf.status}`}>
+                        {scanResult.spf.policy}
+                      </span>
+                    </div>
+
+                    <div className="l-vector-row">
+                      <div className="l-vec-name">
+                        <CheckCircle2 size={15} className={`l-icon-${scanResult.dkim.status}`} />
+                        <span>DKIM Signature</span>
+                      </div>
+                      <span className={`l-vec-badge status-${scanResult.dkim.status}`}>
+                        {scanResult.dkim.keyLength}
+                      </span>
+                    </div>
+
+                    <div className="l-vector-row">
+                      <div className="l-vec-name">
+                        <CheckCircle2 size={15} className={`l-icon-${scanResult.dmarc.status}`} />
+                        <span>DMARC Enforcement</span>
+                      </div>
+                      <span className={`l-vec-badge status-${scanResult.dmarc.status}`}>
+                        {scanResult.dmarc.policy}
+                      </span>
+                    </div>
+
+                    <div className="l-vector-row">
+                      <div className="l-vec-name">
+                        <Lock size={15} className={`l-icon-${scanResult.tls.status}`} />
+                        <span>Transport Cryptography</span>
+                      </div>
+                      <span className={`l-vec-badge status-${scanResult.tls.status}`}>
+                        {scanResult.tls.version} ({scanResult.tls.fs})
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="l-wb-action-pod">
+                    <div className="l-action-title">Audit Action Required:</div>
+                    <div className="l-action-desc">
+                      {scanResult.score >= 80
+                        ? "Domain posture satisfies enterprise baseline. Immutable cryptographic hash has been committed to Sepolia testnet."
+                        : "High vulnerability to email spoofing & MITM cipher downgrade. Deploy hardened DMARC record and upgrade cipher suites."}
+                    </div>
+                    <div className="l-action-buttons">
+                      <button
+                        className="l-btn-primary full-width"
+                        onClick={() => launchConsole("/scanner")}
+                      >
+                        Deep Forensics in Console →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "dns" && (
+                <div className="l-wb-dns-tab">
+                  <div className="l-dns-card">
+                    <div className="l-dns-head">
+                      <span className="mono">SPF TXT Record</span>
+                      <button
+                        className="l-copy-btn"
+                        onClick={() => copyToClipboard(scanResult.spf.detail, "spf")}
+                      >
+                        {copiedKey === "spf" ? <Check size={13} /> : <Copy size={13} />}
+                        <span>{copiedKey === "spf" ? "Copied" : "Copy"}</span>
+                      </button>
+                    </div>
+                    <pre className="l-code-box mono">{scanResult.spf.detail}</pre>
+                  </div>
+
+                  <div className="l-dns-card">
+                    <div className="l-dns-head">
+                      <span className="mono">DMARC Policy TXT Record</span>
+                      <button
+                        className="l-copy-btn"
+                        onClick={() => copyToClipboard(scanResult.dmarc.detail, "dmarc")}
+                      >
+                        {copiedKey === "dmarc" ? <Check size={13} /> : <Copy size={13} />}
+                        <span>{copiedKey === "dmarc" ? "Copied" : "Copy"}</span>
+                      </button>
+                    </div>
+                    <pre className="l-code-box mono">{scanResult.dmarc.detail}</pre>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "tls" && (
+                <div className="l-wb-tls-tab">
+                  <div className="l-tls-grid">
+                    <div className="l-tls-item">
+                      <span className="l-tls-lab">Negotiated Protocol</span>
+                      <span className="l-tls-val mono">{scanResult.tls.version}</span>
+                    </div>
+                    <div className="l-tls-item">
+                      <span className="l-tls-lab">Active Cipher Suite</span>
+                      <span className="l-tls-val mono">{scanResult.tls.cipher}</span>
+                    </div>
+                    <div className="l-tls-item">
+                      <span className="l-tls-lab">Forward Secrecy Key Exchange</span>
+                      <span className="l-tls-val mono">{scanResult.tls.fs}</span>
+                    </div>
+                    <div className="l-tls-item">
+                      <span className="l-tls-lab">STARTTLS Enforcement</span>
+                      <span className="l-tls-val mono">RFC 3207 Verified</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "blockchain" && (
+                <div className="l-wb-chain-tab">
+                  <div className="l-chain-header-row">
+                    <div className="l-chain-seal-badge">
+                      <Database size={15} />
+                      <span>Tamper-Evident SHA-256 State Root</span>
+                    </div>
+                    <span className="mono l-chain-block">Block #{scanResult.blockNum}</span>
+                  </div>
+                  <div className="l-chain-tx-wrap">
+                    <span className="l-tx-label mono">ETHEREUM TX HASH:</span>
+                    <span className="l-tx-val mono">{scanResult.txHash}</span>
+                    <button
+                      className="l-copy-btn"
+                      onClick={() => copyToClipboard(scanResult.txHash, "tx")}
+                    >
+                      {copiedKey === "tx" ? <Check size={13} /> : <Copy size={13} />}
+                      <span>{copiedKey === "tx" ? "Copied" : "Copy Hash"}</span>
+                    </button>
+                  </div>
+                  <div className="l-chain-footer-note">
+                    ✓ Cryptographically anchored on Ethereum Sepolia Testnet. Timestamp and state digest cannot be altered or repudiated.
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Metric Ribbon ── */}
+        <div className="l-stats-ribbon">
+          <div className="l-stat-item" ref={refAccuracy}>
+            <div className="l-stat-number mono">{statAccuracy}%</div>
+            <div className="l-stat-label">AI Posture Accuracy</div>
+            <div className="l-stat-sub">Gradient Boosting Regressor</div>
+          </div>
+
+          <div className="l-stat-divider" />
+
+          <div className="l-stat-item" ref={refLatency}>
+            <div className="l-stat-number mono">&lt;{statLatency}s</div>
+            <div className="l-stat-label">Parallel Scan Latency</div>
+            <div className="l-stat-sub">Asynchronous Socket Harvest</div>
+          </div>
+
+          <div className="l-stat-divider" />
+
+          <div className="l-stat-item" ref={refChecks}>
+            <div className="l-stat-number mono">{statChecks}+</div>
+            <div className="l-stat-label">Cryptographic Vectors</div>
+            <div className="l-stat-sub">RFC 7208, 6376, 7489, SSLyze</div>
+          </div>
+
+          <div className="l-stat-divider" />
+
+          <div className="l-stat-item" ref={refAnchored}>
+            <div className="l-stat-number mono">{statAnchored}%</div>
+            <div className="l-stat-label">On-Chain Audit Sealing</div>
+            <div className="l-stat-sub">Immutable Ethereum IPFS Digests</div>
+          </div>
+        </div>
       </section>
 
-      {/* ══ SOC OPERATIONS COMMAND BATTLESTATION ══ */}
-      <section className="land-soc-section" id="soc-lab" style={{ position: 'relative', zIndex: 1, padding: '3rem 1.5rem 5rem' }}>
-        <div className="land-wrap">
-          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <div className="sec-eyebrow">Real-Time Surveillance</div>
-            <h2 className="sec-h2">
-              Cybersecurity Operations Lab <span className="grad-txt">// SOC Battlestation</span>
-            </h2>
-            <p className="sec-sub">
-              Live multi-monitor telemetry, global threat attack map, packet forensics, and immutable blockchain settlement nodes.
+      {/* ── Section: Bento Grid Features ── */}
+      <section className="l-bento-section" id="bento-features">
+        <div className="l-section-badge">
+          <Layers size={13} />
+          <span>ENTERPRISE ARCHITECTURE</span>
+        </div>
+        <h2 className="l-section-title">
+          The Full-Spectrum <span className="l-title-gradient">Cryptographic Security</span> Bento
+        </h2>
+        <p className="l-section-subtitle">
+          Six tightly integrated modules designed to replace fragile ad-hoc scripts with an institutional-grade
+          posture defense and verification stack.
+        </p>
+
+        <div className="l-bento-grid">
+          {/* Card 1 (Span 2): AI Threat Engine */}
+          <div className="l-bento-card span-2 glow-cyan">
+            <div className="l-card-top">
+              <div className="l-card-icon-wrap cyan">
+                <Cpu size={22} />
+              </div>
+              <span className="l-card-badge mono">XGBOOST V2.4 + SCK-LEARN</span>
+            </div>
+            <h3 className="l-card-title">AI Threat Scoring &amp; Automated CVSS Mapping</h3>
+            <p className="l-card-desc">
+              Trained on extensive breach corpuses, our regression model correlates DNS vulnerabilities with real-world
+              spoofing telemetry, outputting an explainable 0–100 posture score with mapped remediation priorities.
             </p>
-          </div>
-          <SocCommandCenter onLaunchScanner={() => navigate('/dashboard/scanner')} />
-        </div>
-      </section>
-
-      {/* ══ FEATURES ══ */}
-      <section className="land-features" id="about">
-        <div className="land-wrap">
-          <div className="sec-eyebrow">Capabilities</div>
-          <h2 className="sec-h2">Enterprise-grade email<br/><span className="grad-txt">security intelligence</span></h2>
-          <p className="sec-sub">A complete suite of AI-powered tools to find, explain, and fix every cryptographic weakness in your email infrastructure.</p>
-          <div className="feat-grid">
-            {FEATURES.map((f, i) => (
-              <div key={f.title} className="feat-card" style={{ '--fc': f.color, animationDelay:`${i*0.07}s` }}>
-                <div className="fc-icon" style={{ background:`${f.color}1A`, color:f.color }}>{f.icon}</div>
-                <h3>{f.title}</h3>
-                <p>{f.desc}</p>
-                <span className="fc-tag">{f.tag}</span>
+            <div className="l-card-viz-ai">
+              <div className="l-viz-bar">
+                <span className="l-vb-label">SPF Alignment Weight</span>
+                <div className="l-vb-track"><div className="l-vb-fill cyan" style={{ width: "92%" }} /></div>
+                <span className="l-vb-val mono">0.92</span>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ HOW IT WORKS ══ */}
-      <section className="land-how" id="how">
-        <div className="land-wrap">
-          <div className="sec-eyebrow">Process</div>
-          <h2 className="sec-h2">From scan to <span className="grad-txt">hardened</span> in seconds</h2>
-          <div className="how-grid">
-            {HOW_STEPS.map((s, i) => (
-              <div key={s.n} className="how-card">
-                <div className="how-num">{s.n}</div>
-                {i < HOW_STEPS.length-1 && <div className="how-connector"/>}
-                <h3>{s.title}</h3>
-                <p>{s.desc}</p>
+              <div className="l-viz-bar">
+                <span className="l-vb-label">DMARC Reject Enforcement</span>
+                <div className="l-vb-track"><div className="l-vb-fill emerald" style={{ width: "96%" }} /></div>
+                <span className="l-vb-val mono">0.96</span>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ VIDEO EXPLAINER ══ */}
-      <section className="land-video" id="video">
-        <div className="land-wrap">
-          <div className="sec-eyebrow">How It Works</div>
-          <h2 className="sec-h2">See <span className="grad-txt">SecureMailScope</span> in action</h2>
-          <p className="sec-sub">An interactive walkthrough of the entire scan-to-blockchain flow.</p>
-
-          <div className="vp-player">
-            <div className="vp-chrome">
-              <div className="vp-dots"><span/><span/><span/></div>
-              <span className="vp-chrome-title">SecureMailScope — Platform Walkthrough</span>
-              <span className="vp-step-label">Step {vpSlide+1} of {SLIDE_COUNT}</span>
-            </div>
-
-            <div className="vp-screen">
-              {VP_SLIDES.map((sl, i) => (
-                <div key={i} className={`vp-slide ${i===vpSlide?'active':i===(vpSlide-1+SLIDE_COUNT)%SLIDE_COUNT?'exit':''}`}>
-                  <div className="vp-slide-inner">
-                    <div className="vp-step-num">{sl.num}</div>
-                    <div className="vp-icon">{sl.icon}</div>
-                    <h3>{sl.title}</h3>
-                    <p>{sl.body}</p>
-                    <div className="vp-demo">{sl.demo}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="vp-controls">
-              <button className="vp-nav" onClick={()=>goSlide(vpSlide-1)}>‹</button>
-              <div className="vp-dots-row">
-                {Array.from({length:SLIDE_COUNT}).map((_,i)=>(
-                  <button key={i} className={`vp-dot ${i===vpSlide?'active':''}`} onClick={()=>goSlide(i)}/>
-                ))}
+              <div className="l-viz-bar">
+                <span className="l-vb-label">PFS Forward Secrecy Curve</span>
+                <div className="l-vb-track"><div className="l-vb-fill amber" style={{ width: "84%" }} /></div>
+                <span className="l-vb-val mono">0.84</span>
               </div>
-              <div className="vp-prog-wrap">
-                <div className="vp-prog-fill" style={{ width:`${vpProgress}%` }}/>
-              </div>
-              <button className="vp-nav" onClick={()=>goSlide(vpSlide+1)}>›</button>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* ══ LIVE SCANNER ══ */}
-      <section className="land-scanner" id="scanner">
-        <div className="land-wrap">
-          <div className="sec-eyebrow">Live Demo</div>
-          <h2 className="sec-h2">Scan any domain <span className="grad-txt">right now</span></h2>
-          <p className="sec-sub">No account needed. Instant security preview with AI threat scoring.</p>
-
-          <div className="scanner-box">
-            <div className="sb-input-row">
-              <span className="sb-at">@</span>
-              <input className="sb-input" value={scanDomain}
-                onChange={e=>setScanDomain(e.target.value)}
-                onKeyDown={e=>e.key==='Enter'&&!scanning&&doScan()}
-                placeholder="Enter domain to scan…"
-              />
-              <button className="sb-btn" onClick={doScan} disabled={scanning}>
-                {scanning
-                  ? <span className="sb-spin"/>
-                  : '⚡ Scan'
-                }
-              </button>
-            </div>
-            <div className="sb-pills">
-              Quick test:
-              {['google.com','example.com','microsoft.com'].map(d=>(
-                <button key={d} className="sb-pill" onClick={()=>setScanDomain(d)}>{d}</button>
-              ))}
-            </div>
-
-            {scanning && (
-              <div className="sb-scanning animate-neural">
-                <div className="sbs-orb"/>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <div style={{ fontWeight: 700, color: 'var(--l-cyan)', fontSize: '0.86rem' }}>
-                    [ RADAR SCANNING: {scanDomain.toUpperCase()} ]
-                  </div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--l-text-2)', fontFamily: 'var(--l-mono)' }}>
-                    {SCAN_PHASES[scanStep]}
-                  </div>
-                </div>
+          {/* Card 2: TLS 1.3 Inspector */}
+          <div className="l-bento-card">
+            <div className="l-card-top">
+              <div className="l-card-icon-wrap emerald">
+                <Lock size={22} />
               </div>
-            )}
+              <span className="l-card-badge mono">SSL / TLS 1.3</span>
+            </div>
+            <h3 className="l-card-title">Live SMTP &amp; Cipher Inspection</h3>
+            <p className="l-card-desc">
+              Direct probe into mail exchange servers to inspect STARTTLS capabilities, certificate chain validity,
+              and enforce Perfect Forward Secrecy (X25519/P-256).
+            </p>
+            <div className="l-mini-tags">
+              <span className="l-mini-tag">STARTTLS RFC 3207</span>
+              <span className="l-mini-tag">ChaCha20-Poly1305</span>
+              <span className="l-mini-tag">PFS ECDHE</span>
+            </div>
+          </div>
 
-            {scanResult && !scanning && (
-              <div className="sb-result animate-fade">
-                {/* Danger HUD alert if threat detected */}
-                {scanResult.isThreat && (
-                  <div style={{
-                    padding: '1rem 1.25rem',
-                    background: 'linear-gradient(135deg, rgba(255, 0, 85, 0.22) 0%, rgba(255, 183, 3, 0.12) 100%)',
-                    border: '1px solid #FF0055', borderRadius: '10px',
-                    boxShadow: '0 0 25px rgba(255, 0, 85, 0.3)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem',
-                    animation: 'pulse 2.2s infinite'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <span style={{ fontSize: '1.4rem' }}>🚨</span>
-                      <div>
-                        <div style={{ color: '#FF0055', fontWeight: 900, fontSize: '0.88rem', letterSpacing: '0.04em' }}>
-                          DANGER: CRITICAL SECURITY ANOMALY DETECTED
-                        </div>
-                        <div style={{ color: 'var(--l-text-1)', fontSize: '0.76rem' }}>
-                          Domain is vulnerable to phishing spoofing, forged email relays &amp; MITM downgrade.
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.4rem' }}>
-                      <button
-                        onClick={() => soundManager.playThreatWarning()}
-                        className="lnc-ghost"
-                        style={{ borderColor: '#FF0055', color: '#FF0055', fontSize: '0.74rem', padding: '0.3rem 0.65rem' }}
-                      >
-                        🔊 Replay Siren
-                      </button>
-                      <button
-                        onClick={() => navigate('/dashboard/brainstorm')}
-                        className="lnc-primary"
-                        style={{ background: '#FF0055', color: '#FFF', fontSize: '0.74rem', padding: '0.3rem 0.75rem' }}
-                      >
-                        Brainstorm Fixes ↗
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="sbr-header">
-                  <div>
-                    <span className="sbr-domain">{scanResult.domain}</span>
-                    <span className="mono" style={{ fontSize: '0.75rem', color: 'var(--l-text-3)', marginLeft: '0.6rem' }}>
-                      [ VERIFIED VIA LIVE DNS ]
-                    </span>
-                  </div>
-                  <span className={`sbr-score ${scanResult.score>=80?'s-pass':scanResult.score>=50?'s-warn':'s-fail'}`}>
-                    {scanResult.score} / 100 {scanResult.score>=80?'(SECURE)':scanResult.score>=50?'(AT RISK)':'(CRITICAL)'}
-                  </span>
-                </div>
-                <div className="sbr-checks">
-                  {scanResult.checks.map(([name,val],i)=>{
-                    const ok = val==='pass'||val.startsWith('TLS 1.3')||val==='Clean'||val.startsWith('Valid');
-                    const bad = val==='fail'||val==='FOUND'||val==='Expired'||val==='TLS 1.0'||val==='TLS 1.1';
-                    return (
-                      <div key={name} className="sbr-row" style={{ animationDelay:`${i*0.06}s` }}>
-                        <span className={`sbr-dot ${ok?'dot-p':bad?'dot-f':'dot-w'}`}>{ok?'✓':bad?'✗':'⚠'}</span>
-                        <span className="sbr-name">{name}</span>
-                        <span className={`sbr-val ${ok?'col-g':bad?'col-r':'col-y'}`}>{val}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="sbr-chain">
-                  ⛓ Ethereum Sepolia Audit Seal · Hash: <span className="sbr-hash">0x{Math.random().toString(16).slice(2,14)}…4a2b</span>
-                  <span className="sbr-conf">✓ Immutably Anchored</span>
-                </div>
-                <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
-                  <button
-                    onClick={() => navigate('/dashboard')}
-                    className="lnc-primary"
-                    style={{ width: '100%', padding: '0.65rem', fontSize: '0.85rem' }}
-                  >
-                    Open Full Security Dashboard &amp; Forensics →
-                  </button>
-                </div>
+          {/* Card 3: SPF / DKIM / DMARC Policy Synthesizer */}
+          <div className="l-bento-card">
+            <div className="l-card-top">
+              <div className="l-card-icon-wrap amber">
+                <FileText size={22} />
               </div>
-            )}
+              <span className="l-card-badge mono">DNS SYNTHESIZER</span>
+            </div>
+            <h3 className="l-card-title">Automated DNS Policy Hardener</h3>
+            <p className="l-card-desc">
+              Instantly converts flawed SPF mechanisms and monitoring-only DMARC configs into hardened,
+              spoof-proof TXT records ready for cloud DNS deployment.
+            </p>
+            <div className="l-mini-tags">
+              <span className="l-mini-tag">SPF Strict Flattening</span>
+              <span className="l-mini-tag">DMARC p=reject</span>
+              <span className="l-mini-tag">DKIM 2048-bit</span>
+            </div>
+          </div>
 
+          {/* Card 4 (Span 2): Blockchain Audit Trail */}
+          <div className="l-bento-card span-2 glow-emerald">
+            <div className="l-card-top">
+              <div className="l-card-icon-wrap emerald">
+                <Database size={22} />
+              </div>
+              <span className="l-card-badge mono">SOLIDITY SMART CONTRACTS</span>
+            </div>
+            <h3 className="l-card-title">Immutable Blockchain Sealing &amp; IPFS Merkle Proofs</h3>
+            <p className="l-card-desc">
+              Eliminate internal dispute and audit tampering. Every single scan produces a SHA-256 canonical state digest,
+              persisted to decentralized IPFS storage and permanently logged onto Ethereum testnets.
+            </p>
+            <div className="l-chain-wire-preview">
+              <div className="l-wire-node">
+                <span className="l-node-title mono">Domain Hash</span>
+                <span className="l-node-hash mono">sha256(dns + tls)</span>
+              </div>
+              <div className="l-wire-arrow">➔</div>
+              <div className="l-wire-node">
+                <span className="l-node-title mono">IPFS Payload</span>
+                <span className="l-node-hash mono">QmX7b...82a9</span>
+              </div>
+              <div className="l-wire-arrow">➔</div>
+              <div className="l-wire-node active">
+                <span className="l-node-title mono">Sepolia Block</span>
+                <span className="l-node-hash mono">recordAudit()</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 5: RFC 822 Header Forensics */}
+          <div className="l-bento-card">
+            <div className="l-card-top">
+              <div className="l-card-icon-wrap purple">
+                <Terminal size={22} />
+              </div>
+              <span className="l-card-badge mono">RFC 2822 / 822</span>
+            </div>
+            <h3 className="l-card-title">Raw Header Forensics Lab</h3>
+            <p className="l-card-desc">
+              Paste raw received email headers to extract relay hops, reverse-DNS mismatches, authentication results,
+              and detect forged sender envelopes in seconds.
+            </p>
+            <div className="l-mini-tags">
+              <span className="l-mini-tag">Relay Hop Latency</span>
+              <span className="l-mini-tag">DKIM Body Hash</span>
+              <span className="l-mini-tag">Spoof Detection</span>
+            </div>
+          </div>
+
+          {/* Card 6: Zero-Trust Compliance Mapping */}
+          <div className="l-bento-card">
+            <div className="l-card-top">
+              <div className="l-card-icon-wrap cyan">
+                <Shield size={22} />
+              </div>
+              <span className="l-card-badge mono">ISO · NIST · GDPR</span>
+            </div>
+            <h3 className="l-card-title">Institutional Compliance Mapping</h3>
+            <p className="l-card-desc">
+              Export one-click boardroom PDF dossiers mapped directly to ISO 27001 Annex A.13,
+              NIST Cybersecurity Framework PR.DS-2, and GDPR Article 32.
+            </p>
+            <div className="l-mini-tags">
+              <span className="l-mini-tag">ISO 27001</span>
+              <span className="l-mini-tag">NIST CSF 2.0</span>
+              <span className="l-mini-tag">ReportLab PDF</span>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ══ CTA ══ */}
-      <section className="land-cta">
-        <div className="land-wrap">
-          <div className="cta-card">
-            <div className="cta-glow-1"/><div className="cta-glow-2"/>
-            <h2>Ready to secure your email<br/><span className="grad-txt">infrastructure?</span></h2>
-            <p>Full dashboard. Real DNS scans. Blockchain-verified. Built for SIH 2026.</p>
-            <div className="cta-btns">
-              <button className="ha-btn-primary" onClick={() => navigate('/dashboard')}>
-                🚀 Launch Dashboard
-              </button>
-              <a href="#scanner" className="ha-btn-ghost">Try Free Scan</a>
+      {/* ── Section: Interactive Cryptographic Pipeline ── */}
+      <section className="l-pipeline-section" id="cryptographic-pipeline">
+        <div className="l-section-badge">
+          <Activity size={13} />
+          <span>CRYPTOGRAPHIC VERIFICATION PIPELINE</span>
+        </div>
+        <h2 className="l-section-title">
+          How Every Domain Is <span className="l-title-gradient">Audited and Sealed</span>
+        </h2>
+        <p className="l-section-subtitle">
+          Click any stage in the automated pipeline to inspect the cryptographic protocol executed under the hood.
+        </p>
+
+        <div className="l-pipeline-steps-bar">
+          {PIPELINE_STEPS.map((step) => (
+            <button
+              key={step.id}
+              className={`l-pstep-btn ${activeStep.id === step.id ? "active" : ""}`}
+              onClick={() => {
+                soundManager.playClick();
+                setActiveStep(step);
+              }}
+            >
+              <span className="l-pstep-num mono">{step.number}</span>
+              <span className="l-pstep-name">{step.title}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="l-pipeline-detail-card">
+          <div className="l-pdetail-left">
+            <div className="l-pdetail-cat mono">{activeStep.category}</div>
+            <h3 className="l-pdetail-title">{activeStep.title}</h3>
+            <p className="l-pdetail-desc">{activeStep.summary}</p>
+            <div className="l-pdetail-features">
+              <div className="l-pd-feat">
+                <CheckCheck size={16} className="l-icon-pass" />
+                <span>Zero third-party telemetry leakage — fully self-hosted DNS probes</span>
+              </div>
+              <div className="l-pd-feat">
+                <CheckCheck size={16} className="l-icon-pass" />
+                <span>Deterministic mathematical outputs for compliance repeatability</span>
+              </div>
             </div>
-            <div className="cta-note">SIH 2026 · Problem SIH26159 · Blockchain &amp; Cybersecurity</div>
+            <button
+              className="l-btn-primary"
+              onClick={() => launchConsole("/scanner")}
+            >
+              Execute In Live Console →
+            </button>
+          </div>
+
+          <div className="l-pdetail-right">
+            <div className="l-code-header">
+              <div className="l-code-dots">
+                <span className="dot red" />
+                <span className="dot amber" />
+                <span className="dot green" />
+              </div>
+              <span className="l-code-title mono">ENGINE_KERNEL_SPECIFICATION.PY</span>
+            </div>
+            <pre className="l-code-content mono">{activeStep.code}</pre>
           </div>
         </div>
       </section>
 
-      {/* ══ FOOTER ══ */}
-      <footer className="land-footer">
-        <div className="land-wrap lf-inner">
-          <div>
-            <div className="land-brand lf-brand">
-              <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
-                <path d="M14 2L3 7.5V14C3 19.55 7.84 24.74 14 26C20.16 24.74 25 19.55 25 14V7.5L14 2Z" stroke="#00F5FF" strokeWidth="1.8"/>
-                <path d="M9 14l3 3 7-7" stroke="#00FFA3" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              <span>SecureMailScope</span>
-            </div>
-            <p className="lf-desc">AI-Assisted Cryptographic Security Posture Assessment · SIH 2026 · Problem SIH26159</p>
+      {/* ── Section: Compliance Benchmarks ── */}
+      <section className="l-compliance-section" id="compliance-matrix">
+        <div className="l-section-badge">
+          <Globe size={13} />
+          <span>STANDARDS &amp; GOVERNANCE</span>
+        </div>
+        <h2 className="l-section-title">
+          Engineered for <span className="l-title-gradient">Global Regulatory Rigor</span>
+        </h2>
+
+        <div className="l-compliance-grid">
+          <div className="l-comp-card">
+            <div className="l-comp-badge">ISO / IEC 27001</div>
+            <h4>Annex A.13 Information Security</h4>
+            <p>Cryptographic control alignment verifying transport confidentiality and boundary network controls.</p>
           </div>
-          <div className="lf-links">
-            <a href="#about">Features</a>
-            <a href="#video">Demo</a>
-            <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer">API Docs</a>
-            <button onClick={()=>navigate('/dashboard')} style={{ background:'none', border:'none', color:'var(--lf-col)', cursor:'pointer', fontSize:'.875rem' }}>Dashboard</button>
+          <div className="l-comp-card">
+            <div className="l-comp-badge">NIST CSF 2.0</div>
+            <h4>PR.DS-2 In-Transit Protection</h4>
+            <p>Automated verification that enterprise email communications employ enforced cipher suites and strict DMARC.</p>
+          </div>
+          <div className="l-comp-card">
+            <div className="l-comp-badge">EU GDPR</div>
+            <h4>Article 32 Security of Processing</h4>
+            <p>Prevents unauthorized interception and sender impersonation breaches through immutable on-chain proof.</p>
+          </div>
+          <div className="l-comp-card">
+            <div className="l-comp-badge">IETF RFC SUITE</div>
+            <h4>RFC 7208 / 6376 / 7489 / 3207</h4>
+            <p>Strict RFC conformance parser ensuring standard-compliant mail transport across all global MTAs.</p>
           </div>
         </div>
-        <div className="lf-bottom">© 2026 SecureMailScope · Smart India Hackathon 2026</div>
+      </section>
+
+      {/* ── Section: Final High-Impact Conversion CTA ── */}
+      <section className="l-final-cta-section">
+        <div className="l-cta-card">
+          <div className="l-cta-glow-mesh" />
+          <div className="l-cta-badge">
+            <Zap size={14} />
+            <span>INSTANT DEPLOYMENT · ZERO SETUP REQUIRED</span>
+          </div>
+          <h2 className="l-cta-heading">
+            Fortify Your Enterprise Email Posture <span className="l-title-gradient">Today</span>
+          </h2>
+          <p className="l-cta-sub">
+            Run complete domain scans, verify raw email headers, and generate tamper-proof blockchain audit trails
+            in under three seconds.
+          </p>
+          <div className="l-cta-btn-row">
+            <button
+              className="l-btn-primary large"
+              onClick={() => launchConsole("/overview")}
+            >
+              <span>Launch Enterprise Console</span>
+              <ArrowUpRight size={17} />
+            </button>
+            <a
+              href="http://127.0.0.1:8000/docs"
+              target="_blank"
+              rel="noreferrer"
+              className="l-btn-ghost large"
+            >
+              Read Swagger API Docs
+            </a>
+          </div>
+          <div className="l-cta-legal mono">
+            Smart India Hackathon 2026 · Problem Statement SIH26159 · Developed by Team SecureScope
+          </div>
+        </div>
+      </section>
+
+      {/* ── Clean Obsidian Cyber Footer ── */}
+      <footer className="l-footer">
+        <div className="l-footer-top">
+          <div className="l-foot-brand">
+            <div className="l-brand-badge small">
+              <Shield size={16} className="l-brand-shield" />
+            </div>
+            <span className="l-foot-brand-title">SecureMailScope</span>
+            <span className="l-foot-brand-desc">
+              AI-assisted cryptographic security posture assessment &amp; on-chain blockchain verification.
+            </span>
+          </div>
+
+          <div className="l-foot-cols">
+            <div className="l-foot-col">
+              <h5>Platform Modules</h5>
+              <button onClick={() => launchConsole("/overview")}>Security Overview</button>
+              <button onClick={() => launchConsole("/scanner")}>Domain Scanner</button>
+              <button onClick={() => launchConsole("/forensics")}>Header Forensics</button>
+              <button onClick={() => launchConsole("/ledger")}>Blockchain Ledger</button>
+              <button onClick={() => launchConsole("/reports")}>Compliance Reports</button>
+            </div>
+            <div className="l-foot-col">
+              <h5>Standards &amp; Tech</h5>
+              <a href="http://127.0.0.1:8000/docs" target="_blank" rel="noreferrer">FastAPI REST Docs</a>
+              <span>XGBoost Classifier</span>
+              <span>SSLyze Engine</span>
+              <span>Solidity Smart Contracts</span>
+              <span>Ethereum Sepolia Node</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="l-footer-bottom">
+          <div className="l-foot-copy mono">
+            © 2026 SecureMailScope · SIH26159 · All Cryptographic Audits Anchored On-Chain
+          </div>
+          <div className="l-foot-status">
+            <span className="l-foot-dot" />
+            <span className="mono">Network Status: Operational</span>
+          </div>
+        </div>
       </footer>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { getScoreColor, AUDIT_LOGS, createNewAuditRecord } from '../data/mockData.js';
@@ -54,7 +54,7 @@ export default function AuditLog({ apiOnline }) {
       soundManager.playClick();
       toast.success(`⛓️ New Audit Tx mined on Block #${nextBlock} (${pick.domain})`, {
         icon: '◈',
-        style: { background: '#0D0028', color: '#00D4FF', border: '1px solid rgba(0,212,255,0.2)' }
+        style: { background: '#0D0028', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)' }
       });
     }, 7000);
     return () => clearInterval(interval);
@@ -104,17 +104,27 @@ export default function AuditLog({ apiOnline }) {
   return (
     <div className="animate-fade">
       {/* Header section with live network status */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.75rem' }}
+      >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 800 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
               Blockchain Security Audit Ledger
             </h2>
-            <span className="tag tag-cyan" style={{ fontSize: '0.72rem', letterSpacing: '0.05em' }}>
+            <motion.span
+              className="tag tag-cyan"
+              style={{ fontSize: '0.72rem', letterSpacing: '0.05em' }}
+              animate={{ opacity: [0.7, 1, 0.7] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
               EVM IMMUTABLE
-            </span>
+            </motion.span>
           </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '680px' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', maxWidth: '680px', lineHeight: 1.6 }}>
             Every cryptographic assessment and MTA verification is signed via ECDSA, bundled into a Merkle tree, and anchored to decentralized smart contracts.
           </p>
         </div>
@@ -147,15 +157,15 @@ export default function AuditLog({ apiOnline }) {
             style={{
               fontSize: '0.82rem', padding: '0.45rem 1rem',
               display: 'flex', alignItems: 'center', gap: '0.5rem',
-              background: 'linear-gradient(135deg, #00FFA3 0%, #00F5FF 100%)',
-              color: '#030712', fontWeight: 800,
-              border: 'none', boxShadow: '0 0 16px rgba(0, 245, 255, 0.3)'
+              background: 'linear-gradient(135deg, #00C896 0%, #D4AF37 100%)',
+              color: '#0A0005', fontWeight: 800,
+              border: 'none', boxShadow: '0 0 16px rgba(212,175,55, 0.3)'
             }}
           >
             {isMining ? '⛏️ Mining Block…' : '⛏️ Mine New Audit Block'}
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Network Selector Tabs */}
       <div style={{
@@ -172,14 +182,14 @@ export default function AuditLog({ apiOnline }) {
                 soundManager.playClick();
               }}
               style={{
-                background: isCurrent ? 'rgba(0, 245, 255, 0.12)' : 'rgba(255,255,255,0.03)',
+                background: isCurrent ? 'rgba(212,175,55, 0.12)' : 'rgba(255,255,255,0.03)',
                 border: isCurrent ? '1px solid var(--accent-cyan)' : '1px solid var(--border)',
                 borderRadius: '10px',
                 padding: '0.55rem 0.95rem',
                 display: 'flex', alignItems: 'center', gap: '0.6rem',
                 cursor: 'pointer',
                 transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                boxShadow: isCurrent ? '0 0 14px rgba(0, 245, 255, 0.25)' : 'none'
+                boxShadow: isCurrent ? '0 0 14px rgba(212,175,55, 0.25)' : 'none'
               }}
             >
               <span style={{ fontSize: '1.1rem' }}>{net.icon}</span>

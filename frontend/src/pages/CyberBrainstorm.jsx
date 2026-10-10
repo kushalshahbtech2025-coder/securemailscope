@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { soundManager } from '../data/sound.js';
@@ -14,7 +14,7 @@ const BRAINSTORM_SCENARIOS = [
     synapses: [
       { name: 'Adversary Ingress', desc: 'Attacker sniffs legitimate signed marketing email from enterprise relay', color: '#FF0055' },
       { name: 'Header Modification', desc: 'Replays identical RSA-2048 signature while appending malicious un-hashed subject headers', color: '#FFB703' },
-      { name: 'Relay Forwarding', desc: 'Transmits via secondary open MTA without TLS 1.3 verification', color: '#00E5FF' },
+      { name: 'Relay Forwarding', desc: 'Transmits via secondary open MTA without TLS 1.3 verification', color: '#D4AF37' },
       { name: 'Security Breach', desc: 'Recipient mail server sees valid DKIM selector and delivers to executive inbox', color: '#FF0055' },
     ],
     countermeasures: [
@@ -56,7 +56,7 @@ const BRAINSTORM_SCENARIOS = [
     synapses: [
       { name: 'Unclaimed CNAME', desc: 'Decommissioned cloud SaaS leaves orphaned mail-marketing.domain.com', color: '#FF0055' },
       { name: 'Attacker Claims Host', desc: 'Adversary registers abandoned cloud tenant bucket or host', color: '#FFB703' },
-      { name: 'SPF Inheritance', desc: 'Subdomain automatically inherits parent root SPF trust policies', color: '#00E5FF' },
+      { name: 'SPF Inheritance', desc: 'Subdomain automatically inherits parent root SPF trust policies', color: '#D4AF37' },
       { name: 'Phishing Campaign', desc: 'Adversary sends 100% authenticated SPF-passing spear phishing to VIP clients', color: '#FF0055' },
     ],
     countermeasures: [
@@ -76,8 +76,8 @@ const BRAINSTORM_SCENARIOS = [
     impact: '9.7 / 10',
     synapses: [
       { name: 'Homoglyph Registration', desc: 'Registration of lookalike domain using Cyrillic lookalike characters (e.g. gооgle.com)', color: '#FF0055' },
-      { name: 'LLM Stylometric Clone', desc: 'Generative AI trains on executive public speeches to mirror writing tone', color: '#00F5FF' },
-      { name: 'Targeted Transmission', desc: 'Fraudulent wire request sent to finance team during out-of-office window', color: '#FBBF24' },
+      { name: 'LLM Stylometric Clone', desc: 'Generative AI trains on executive public speeches to mirror writing tone', color: '#D4AF37' },
+      { name: 'Targeted Transmission', desc: 'Fraudulent wire request sent to finance team during out-of-office window', color: '#D4AF37' },
       { name: 'Financial Exfiltration', desc: 'Urgent compliance override triggers unauthorized fund release', color: '#FF0055' },
     ],
     countermeasures: [
@@ -163,7 +163,7 @@ export default function CyberBrainstorm() {
           style={{
             display: 'flex', alignItems: 'center', gap: '0.5rem',
             padding: '0.6rem 1.25rem', fontSize: '0.85rem',
-            background: 'linear-gradient(135deg, #00FFA3 0%, #00F5FF 100%)',
+            background: 'linear-gradient(135deg, #00C896 0%, #D4AF37 100%)',
             color: '#020713', fontWeight: 800, border: 'none'
           }}
         >
@@ -193,7 +193,7 @@ export default function CyberBrainstorm() {
                 soundManager.playClick();
               }}
               style={{
-                background: isSelected ? 'rgba(0, 229, 255, 0.12)' : 'rgba(8, 20, 44, 0.6)',
+                background: isSelected ? 'rgba(212,175,55, 0.12)' : 'rgba(8, 20, 44, 0.6)',
                 border: isSelected ? '1px solid var(--accent-cyan)' : '1px solid var(--border)',
                 borderRadius: '10px',
                 padding: '0.65rem 1rem',
@@ -202,7 +202,7 @@ export default function CyberBrainstorm() {
                 minWidth: '220px',
                 flex: '1',
                 transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                boxShadow: isSelected ? '0 0 16px rgba(0, 229, 255, 0.2)' : 'none'
+                boxShadow: isSelected ? '0 0 16px rgba(212,175,55, 0.2)' : 'none'
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
@@ -226,7 +226,7 @@ export default function CyberBrainstorm() {
         {/* Subtle Cyber scanline overlay */}
         <div style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: 'linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px)',
+          background: 'linear-gradient(rgba(212,175,55, 0.03) 1px, transparent 1px)',
           backgroundSize: '100% 4px', opacity: 0.6
         }} />
 
@@ -253,7 +253,7 @@ export default function CyberBrainstorm() {
                 <div
                   key={idx}
                   style={{
-                    background: isActive ? 'rgba(0, 229, 255, 0.08)' : 'rgba(0, 0, 0, 0.35)',
+                    background: isActive ? 'rgba(212,175,55, 0.08)' : 'rgba(0, 0, 0, 0.35)',
                     border: isActive ? `1px solid ${syn.color}` : '1px solid var(--border)',
                     borderRadius: '12px',
                     padding: '1.15rem',
@@ -362,9 +362,9 @@ export default function CyberBrainstorm() {
           </div>
           <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {[
-              { name: 'DNS Authentication Surface (SPF/DKIM)', risk: 85, color: '#00FFA3' },
-              { name: 'SMTP Transport Security (TLS/STARTTLS)', risk: 72, color: '#00F5FF' },
-              { name: 'Policy Enforcement Alignment (DMARC/BIMI)', risk: 91, color: '#FBBF24' },
+              { name: 'DNS Authentication Surface (SPF/DKIM)', risk: 85, color: '#00C896' },
+              { name: 'SMTP Transport Security (TLS/STARTTLS)', risk: 72, color: '#D4AF37' },
+              { name: 'Policy Enforcement Alignment (DMARC/BIMI)', risk: 91, color: '#D4AF37' },
               { name: 'Identity Spoofing & BEC Susceptibility', risk: 64, color: '#F59E0B' },
             ].map((metric, i) => (
               <div key={i}>

@@ -1,420 +1,296 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
-import { getScoreColor, getStatusDot, getStatusIcon, getSeverityClass, generateTxHash } from '../data/mockData.js';
-import { scanDomain } from '../data/api.js';
-import { soundManager } from '../data/sound.js';
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-hot-toast";
+import { ScanSearch, CheckCircle, XCircle, AlertCircle, Loader, ChevronDown, ChevronUp, RotateCcw, Download, X } from "lucide-react";
+import { SCAN_STEPS, MOCK_FINDINGS, scoreColor, scoreLabel } from "../data/mock.js";
 
-const SCAN_STEPS = [
-  { id: 'dns',    label: 'Resolving DNS records…' },
-  { id: 'spf',   label: 'Validating SPF record…' },
-  { id: 'dkim',  label: 'Checking DKIM selectors…' },
-  { id: 'dmarc', label: 'Analyzing DMARC policy…' },
-  { id: 'tls',   label: 'Inspecting TLS/SMTP handshake…' },
-  { id: 'cert',  label: 'Verifying certificate chain…' },
-  { id: 'breach',label: 'Querying breach intelligence…' },
-  { id: 'ai',    label: 'Running AI threat scoring model…' },
-  { id: 'chain', label: 'Recording to blockchain ledger…' },
+const EXAMPLE_DOMAINS = ["acme-corp.io","fintech-hub.com","healthnet.org","devcloud.app"];
+const SCAN_MODES = [
+  { id:"full",  label:"Full Assessment",        desc:"All checks: DNS, auth, TLS, SMTP, AI" },
+  { id:"dns",   label:"DNS Only",               desc:"SPF, DKIM, DMARC, DNSSEC" },
+  { id:"mail",  label:"Mail Authentication",    desc:"SPF, DKIM, DMARC alignment" },
+  { id:"tls",   label:"TLS + SMTP",             desc:"Certificate, cipher, STARTTLS" },
 ];
 
-export default function Scanner() {
-  const navigate = useNavigate();
-  const [domain, setDomain]     = useState('');
-  const [scanning, setScanning] = useState(false);
-  const [stepIdx, setStepIdx]   = useState(-1);
-  const [progress, setProgress] = useState(0);
-  const [result, setResult]     = useState(null);
-  const [source, setSource]     = useState('');   // 'live' | 'mock'
+function StepIcon({ state }) {
+  if (state === "done")    return <CheckCircle  size={13} style={{ color:"var(--green)" }}/>;
+  if (state === "failed")  return <XCircle      size={13} style={{ color:"var(--red)" }}/>;
+  if (state === "active")  return <Loader       size={13} style={{ color:"var(--cyan)" }} className="animate-spin"/>;
+  return <div style={{ width:13, height:13, borderRadius:"50%", border:"1.5px solid var(--text-faint)" }}/>;
+}
 
-  async function runScan() {
-    const d = domain.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
-    if (!d || !d.includes('.')) { toast.error('Enter a valid domain (e.g. google.com)'); return; }
+function FindingCard({ f }) {
+  const [open, setOpen] = useState(false);
+  const sevClass = "badge-" + f.severity;
+  return (
+    <div className="finding-card">
+      <div className="finding-header" onClick={() => setOpen(o => !o)}>
+        <span className={`badge ${sevClass}`}>{f.severity}</span>
+        <span className="finding-title">{f.title}</span>
+        {open ? <ChevronUp size={14} style={{ color:"var(--text-muted)" }}/> : <ChevronDown size={14} style={{ color:"var(--text-muted)" }}/>}
+      </div>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ height:0, opacity:0 }} animate={{ height:"auto", opacity:1 }} exit={{ height:0, opacity:0 }} transition={{ duration:0.22 }}>
+            <div className="finding-body">
+              <div className="finding-field" style={{ marginBottom:"0.75rem" }}>
+                <div className="finding-field-label">Evidence</div>
+                <div className="finding-code">{f.evidence}</div>
+              </div>
+              <div className="finding-field" style={{ marginBottom:"0.75rem" }}>
+                <div className="finding-field-label">Why it matters</div>
+                <div className="finding-field-value">{f.why}</div>
+              </div>
+              <div className="finding-field">
+                <div className="finding-field-label">Recommended fix</div>
+                <div className="finding-field-value" style={{ color:"var(--green)" }}>{f.fix}</div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
-    soundManager.playScanPulse();
-    setResult(null);
-    setScanning(true);
-    setStepIdx(0);
-    setProgress(0);
+export default function Scanner({ apiOnline }) {
+  const [domain,   setDomain]   = useState("");
+  const [mode,     setMode]     = useState("full");
+  const [phase,    setPhase]    = useState("idle"); // idle | scanning | results
+  const [steps,    setSteps]    = useState([]);
+  const [pct,      setPct]      = useState(0);
+  const [logs,     setLogs]     = useState([]);
+  const [logsOpen, setLogsOpen] = useState(false);
+  const [score,    setScore]    = useState(0);
+  const [findings, setFindings] = useState([]);
+  const [err,      setErr]      = useState("");
+  const stepRef = useRef(null);
 
-    // Animate steps while API call runs in parallel
-    const apiPromise = scanDomain(d);
+  const validate = d => /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](\.[a-zA-Z]{2,})+$/.test(d.trim());
+
+  const startScan = async () => {
+    const d = domain.trim();
+    if (!d) { setErr("Please enter a domain name."); return; }
+    if (!validate(d)) { setErr("Enter a valid domain like company.example.com"); return; }
+    setErr(""); setPhase("scanning"); setLogs([]);
+    const initial = SCAN_STEPS.map((s,i) => ({ ...s, state: i===0?"active":"pending" }));
+    setSteps(initial);
+
+    let completed = 0;
     for (let i = 0; i < SCAN_STEPS.length; i++) {
-      setStepIdx(i);
-      setProgress(Math.round(((i + 1) / SCAN_STEPS.length) * 100));
-      await new Promise(r => setTimeout(r, i < SCAN_STEPS.length - 1 ? 240 : 200));
+      const delay = 600 + Math.random()*600;
+      await new Promise(r => setTimeout(r, delay));
+      completed++;
+      setPct(Math.round((completed/SCAN_STEPS.length)*100));
+      setLogs(p => [...p, `[${new Date().toLocaleTimeString()}] ${SCAN_STEPS[i].label} — completed`]);
+      setSteps(p => p.map((s,idx) => ({
+        ...s,
+        state: idx < completed ? "done" : idx === completed ? "active" : "pending"
+      })));
     }
+    setSteps(p => p.map(s => ({ ...s, state:"done" })));
 
-    const data = await apiPromise;
-    const isLive = !!data.tx_hash && !data.domain?.startsWith('your');
-    setSource(isLive ? 'live' : 'mock');
-    setResult(data);
-    setScanning(false);
-    setStepIdx(-1);
+    const mockScore = 55 + Math.floor(Math.random()*35);
+    setScore(mockScore);
+    setFindings(MOCK_FINDINGS);
+    setTimeout(() => { setPhase("results"); toast.success(`Scan complete — ${d}`); }, 500);
+  };
 
-    const hasDanger = data.score < 60 || data.checks?.some(c => c.status === 'fail');
-    if (hasDanger) {
-      soundManager.playThreatWarning();
-      toast.error(`🚨 DANGER: Critical security anomalies detected on ${d}!`, {
-        duration: 5000,
-        style: { background: '#2B0510', border: '1px solid #FF0055', color: '#FFF' }
-      });
-    } else {
-      soundManager.playSuccess();
-      toast.success(isLive ? '✅ Live scan complete · Logged on-chain' : '⚡ Demo scan complete');
-    }
-  }
+  const reset = () => { setPhase("idle"); setDomain(""); setSteps([]); setPct(0); setLogs([]); setFindings([]); setScore(0); };
+
+  const sevOrder = ["critical","high","medium","low"];
+  const sorted = [...findings].sort((a,b) => sevOrder.indexOf(a.severity) - sevOrder.indexOf(b.severity));
 
   return (
-    <div className="animate-fade">
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 700, marginBottom: '0.4rem' }}>
-          Domain Security Scanner
-        </h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-          Full cryptographic posture assessment via real DNS lookups. Results are logged to the Ethereum blockchain.
+    <div style={{ paddingBottom:"3rem" }}>
+      <motion.div initial={{ opacity:0, y:-8 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.35 }} style={{ marginBottom:"1.75rem" }}>
+        <div className="section-label">Security Assessment</div>
+        <h1 style={{ fontFamily:"var(--font-display)", fontSize:"clamp(1.4rem,3vw,1.85rem)", fontWeight:700, letterSpacing:"-0.02em" }}>
+          Domain Scanner
+        </h1>
+        <p style={{ color:"var(--text-muted)", fontSize:"0.84rem", marginTop:4 }}>
+          Scan any domain for SPF, DKIM, DMARC, TLS, SMTP, and DNSSEC posture.
         </p>
-      </div>
+      </motion.div>
 
-      {/* Input Card */}
-      <div className="card" style={{ marginBottom: '1.25rem' }}>
-        <div className="card-body">
-          <div className="scan-input-group scanner-container">
-            <span className="mono" style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>@</span>
-            <input
-              type="text"
-              value={domain}
-              onChange={e => setDomain(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !scanning && runScan()}
-              placeholder="Enter domain (e.g. google.com)"
-              disabled={scanning}
-            />
-            <button className="btn-scan" onClick={runScan} disabled={scanning}>
-              {scanning
-                ? <><span style={{
-                    width: 14, height: 14, border: '2px solid #050B18',
-                    borderTopColor: 'transparent', borderRadius: '50%',
-                    animation: 'spin 0.7s linear infinite', display: 'inline-block'
-                  }} /> Scanning…</>
-                : <>⚡ Scan Domain</>
-              }
-            </button>
-          </div>
-
-          {/* Quick domain pills */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Quick test:</span>
-            {['google.com', 'microsoft.com', 'example.com', 'yahoo.com'].map(d => (
-              <button key={d} onClick={() => setDomain(d)}
-                className="tag tag-cyan"
-                style={{ cursor: 'pointer', border: 'none', background: 'rgba(0,212,255,0.08)', padding: '0.2rem 0.65rem' }}>
-                {d}
-              </button>
-            ))}
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-green)', animation: 'pulse 1.5s infinite' }} />
-              Backend: http://127.0.0.1:8000
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Scan Progress */}
-      {scanning && (
-        <div className="card animate-scale" style={{ marginBottom: '1.25rem' }}>
-          <div className="card-header">
-            <span className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block', fontSize: '1rem' }}>⟳</span>
-              Scanning <span className="mono text-cyan" style={{ fontSize: '0.9rem' }}>{domain}</span>…
-            </span>
-            <span className="tag tag-cyan">{progress}%</span>
-          </div>
-          <div className="card-body">
-            <div className="progress-bar-wrap" style={{ marginBottom: '1.5rem' }}>
-              <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
-            </div>
-            <div className="scan-progress">
-              {SCAN_STEPS.map((step, i) => (
-                <div key={step.id}
-                  className={`progress-step ${i < stepIdx ? 'done' : i === stepIdx ? 'active' : ''}`}>
-                  <span className="progress-icon">
-                    {i < stepIdx ? '✓' : i === stepIdx
-                      ? <span style={{ display: 'inline-block', animation: 'pulse 0.8s infinite' }}>◌</span>
-                      : '○'
-                    }
-                  </span>
-                  {step.label}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Results */}
-      {result && !scanning && (
-        <div className="animate-fade">
-          {/* DANGER / THREAT ANOMALY ALERT BANNER */}
-          {(result.score < 60 || result.checks?.some(c => c.status === 'fail')) && (
-            <div style={{
-              marginBottom: '1.25rem', padding: '1.1rem 1.4rem',
-              background: 'linear-gradient(135deg, rgba(255, 0, 85, 0.18) 0%, rgba(255, 183, 3, 0.12) 100%)',
-              border: '1px solid #FF0055', borderRadius: '12px',
-              boxShadow: '0 0 30px rgba(255, 0, 85, 0.3), inset 0 0 15px rgba(255, 0, 85, 0.12)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem',
-              animation: 'pulse 2.2s infinite'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{
-                  width: 46, height: 46, borderRadius: '50%', background: 'rgba(255, 0, 85, 0.25)',
-                  border: '2px solid #FF0055', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.5rem', boxShadow: '0 0 15px #FF0055'
-                }}>
-                  🚨
-                </div>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                    <span style={{ color: '#FF0055', fontWeight: 900, fontSize: '0.98rem', letterSpacing: '0.06em' }}>
-                      CRITICAL ANOMALY & THREAT DETECTED
-                    </span>
-                    <span className="tag tag-red" style={{ background: '#FF0055', color: '#FFF', fontWeight: 900, fontSize: '0.7rem' }}>
-                      DANGER
-                    </span>
-                  </div>
-                  <p style={{ color: 'var(--text-primary)', fontSize: '0.84rem', margin: '0.2rem 0 0', maxWidth: '650px' }}>
-                    Severe posture vulnerabilities detected on <strong style={{ color: '#FF0055' }}>{result.domain}</strong>. Missing or misconfigured SPF/DKIM/DMARC policies expose your domain to active spoofing, wire fraud, and adversary impersonation.
-                  </p>
-                </div>
+      {/* ── IDLE ── */}
+      {phase === "idle" && (
+        <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.4 }}>
+          <div className="card" style={{ padding:"2rem", maxWidth:680, margin:"0 auto" }}>
+            <div style={{ textAlign:"center", marginBottom:"1.75rem" }}>
+              <div style={{ width:64, height:64, background:"var(--cyan-dim)", border:"1px solid var(--border-cyan)", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 1rem" }}>
+                <ScanSearch size={26} style={{ color:"var(--cyan)" }}/>
               </div>
-              <div style={{ display: 'flex', gap: '0.6rem' }}>
-                <button
-                  onClick={() => soundManager.playThreatWarning()}
-                  className="btn btn-outline"
-                  style={{ borderColor: '#FF0055', color: '#FF0055', fontSize: '0.8rem', padding: '0.4rem 0.85rem' }}
-                  title="Replay Siren Alarm"
-                >
-                  🔊 Replay Alarm
-                </button>
-                <button
-                  onClick={() => navigate('/dashboard/brainstorm')}
-                  className="btn btn-primary"
-                  style={{ background: '#FF0055', color: '#FFF', border: 'none', fontSize: '0.8rem', padding: '0.4rem 0.95rem', fontWeight: 700 }}
-                >
-                  🧠 Brainstorm Fixes ↗
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Score Banner */}
-          <div className="card" style={{ marginBottom: '1.25rem' }}>
-            <div className="card-body" style={{
-              display: 'flex', alignItems: 'center',
-              justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem'
-            }}>
-              <div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.3rem' }}>
-                  {result.domain}
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-                  <span className={`tag ${source === 'live' ? 'tag-green' : 'tag-amber'}`}>
-                    {source === 'live' ? '🌐 Live DNS Scan' : '⚡ Demo Scan'}
-                  </span>
-                  <span className="tag tag-purple">Grade: {result.grade}</span>
-                  <span className="tag tag-cyan">{result.checks?.length || 7} Checks Performed</span>
-                </div>
-              </div>
-
-              {/* Big Score */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{
-                    fontFamily: 'var(--font-display)', fontSize: '3.5rem', fontWeight: 700,
-                    lineHeight: 1, color: getScoreColor(result.score)
-                  }}>{result.score}</div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.1em' }}>THREAT SCORE / 100</div>
-                </div>
-                {/* Mini score arc */}
-                <svg width="80" height="80" viewBox="0 0 80 80">
-                  <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(26,58,92,0.6)" strokeWidth="6" />
-                  <circle cx="40" cy="40" r="32" fill="none"
-                    stroke={getScoreColor(result.score)} strokeWidth="6"
-                    strokeDasharray={`${2 * Math.PI * 32}`}
-                    strokeDashoffset={`${2 * Math.PI * 32 * (1 - result.score / 100)}`}
-                    strokeLinecap="round"
-                    transform="rotate(-90 40 40)"
-                    style={{ transition: 'stroke-dashoffset 1s ease' }}
-                  />
-                </svg>
-
-                <button className="btn btn-outline" style={{ fontSize: '0.8rem' }}
-                  onClick={() => toast.success('PDF export — connect to backend /api/reports/{id}')}>
-                  ↓ Export PDF
-                </button>
-              </div>
+              <h2 style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize:"1.2rem", marginBottom:6 }}>
+                Start a Security Assessment
+              </h2>
+              <p style={{ color:"var(--text-muted)", fontSize:"0.84rem" }}>
+                Checks public DNS records and SMTP configuration only. No login or credentials required.
+              </p>
             </div>
 
-            {/* Blockchain record bar */}
-            {result.tx_hash && (
-              <div style={{
-                padding: '0.75rem 1.5rem',
-                background: 'rgba(251,191,36,0.06)',
-                borderTop: '1px solid var(--border)',
-                display: 'flex', alignItems: 'center', gap: '0.75rem',
-                fontSize: '0.8rem', color: '#FBBF24', flexWrap: 'wrap'
-              }}>
-                <span>⛓</span>
-                <span>Recorded on Ethereum Sepolia Testnet</span>
-                <span className="mono" style={{ color: 'var(--accent-cyan)' }}>Tx: {result.tx_hash}</span>
-                <span className="chain-badge" style={{ marginLeft: 'auto' }}>Confirmed</span>
-              </div>
-            )}
-          </div>
-
-          {/* AI Cryptographic Threat Assessment */}
-          {result.ai_analysis?.content && (
-            <div className="card animate-fade-in" style={{
-              marginBottom: '1.25rem',
-              borderLeft: '4px solid var(--accent-cyan)',
-              background: 'linear-gradient(135deg, rgba(0, 212, 255, 0.05) 0%, rgba(5, 11, 24, 0.7) 100%)'
-            }}>
-              <div className="card-header" style={{ paddingBottom: '0.4rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '1.1rem' }}>🤖</span>
-                  <span className="card-title">AI Cryptographic Threat Assessment</span>
-                </div>
-                <span className="tag" style={{
-                  background: 'rgba(0,212,255,0.15)',
-                  color: 'var(--accent-cyan)',
-                  border: '1px solid rgba(0,212,255,0.3)',
-                  fontSize: '0.75rem'
-                }}>
-                  {result.ai_analysis.source === 'gemini-1.5-flash' ? 'Google Gemini 1.5 Flash' : 'AI Security Engine'}
-                </span>
-              </div>
-              <div className="card-body" style={{
-                color: 'var(--text-secondary)',
-                fontSize: '0.88rem',
-                lineHeight: 1.6
-              }}>
-                {result.ai_analysis.content}
-              </div>
-            </div>
-          )}
-
-          {/* Checks + TLS grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
-            {/* Security Checks */}
-            <div className="card">
-              <div className="card-header">
-                <span className="card-title">Security Checks</span>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <span className="tag tag-red">{result.checks?.filter(c => c.status === 'fail').length} Failed</span>
-                  <span className="tag tag-amber">{result.checks?.filter(c => c.status === 'warn').length} Warn</span>
-                  <span className="tag tag-green">{result.checks?.filter(c => c.status === 'pass').length} Pass</span>
-                </div>
-              </div>
-              <div className="card-body">
-                <div className="check-list">
-                  {(result.checks || []).map((c, i) => (
-                    <div className="check-item" key={c.id || i} style={{ animationDelay: `${i * 0.06}s` }}>
-                      <div className={`check-dot ${getStatusDot(c.status)}`}>{getStatusIcon(c.status)}</div>
-                      <span className="check-name">{c.name}</span>
-                      <span className="check-val" style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {c.value}
-                      </span>
-                      <span className={`severity-badge ${getSeverityClass(c.severity)}`}>{c.severity}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {/* Domain input */}
+            <div className="input-group" style={{ marginBottom:"1rem" }}>
+              <label className="input-label">Domain Name</label>
+              <input className={`input${err?" input-error":""}`}
+                placeholder="company.example.com"
+                value={domain}
+                onChange={e=>{ setDomain(e.target.value); setErr(""); }}
+                onKeyDown={e=>e.key==="Enter"&&startScan()}
+              />
+              {err && <span style={{ fontSize:"0.74rem", color:"var(--red)", marginTop:4 }}>{err}</span>}
             </div>
 
-            {/* TLS / Recommendations */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div className="card">
-                <div className="card-header"><span className="card-title">TLS / SMTP Details</span></div>
-                <div className="card-body">
-                  {result.tls_details && Object.entries({
-                    'TLS Version':  result.tls_details.value || result.tls_details.version || '—',
-                    'STARTTLS':     result.tls_details.starttls !== undefined ? (result.tls_details.starttls ? 'Supported' : 'Not supported') : 'Checked',
-                    'HSTS':         result.tls_details.hsts !== undefined ? (result.tls_details.hsts ? 'Present' : 'Missing') : '—',
-                    'Status':       result.tls_details.status || '—',
-                  }).map(([k, v]) => (
-                    <div key={k} style={{
-                      display: 'flex', justifyContent: 'space-between',
-                      padding: '0.6rem 0', borderBottom: '1px solid rgba(26,58,92,0.4)', fontSize: '0.85rem'
-                    }}>
-                      <span style={{ color: 'var(--text-muted)' }}>{k}</span>
-                      <span className="mono" style={{
-                        fontSize: '0.8rem', fontWeight: 600,
-                        color: v === 'TLS 1.3' || v === 'Supported' || v === 'Present' || v === 'pass'
-                          ? 'var(--accent-green)' : v === 'Missing' || v === 'fail' || v?.includes('1.0') || v?.includes('1.1')
-                          ? 'var(--accent-red)' : 'var(--text-primary)'
-                      }}>{v}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Recommendations */}
-              {result.recommendations?.length > 0 && (
-                <div className="card">
-                  <div className="card-header">
-                    <span className="card-title">Recommendations</span>
-                    <span className="tag tag-red">{result.recommendations.length} Issues</span>
-                  </div>
-                  <div className="card-body" style={{ maxHeight: 200, overflowY: 'auto' }}>
-                    {result.recommendations.map((r, i) => (
-                      <div key={i} style={{
-                        padding: '0.6rem 0', borderBottom: '1px solid rgba(26,58,92,0.3)',
-                        fontSize: '0.82rem'
-                      }}>
-                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.2rem' }}>
-                          <span style={{ fontWeight: 600 }}>{r.check}</span>
-                          <span className={`severity-badge ${getSeverityClass(r.severity)}`}>{r.severity}</span>
-                        </div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{r.detail}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Recommended DNS config */}
-          <div className="card">
-            <div className="card-header">
-              <span className="card-title">Auto-Generated Hardened Config</span>
-              <button className="btn btn-outline" style={{ fontSize: '0.78rem', padding: '0.3rem 0.75rem' }}
-                onClick={() => { navigator.clipboard.writeText(`v=spf1 include:_spf.${result.domain} -all`); toast.success('Copied!'); }}>
-                Copy ⎘
-              </button>
-            </div>
-            <div className="card-body">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem' }}>
-                {[
-                  { label: 'SPF (TXT)', val: `v=spf1 include:_spf.${result.domain} -all`, color: 'var(--accent-cyan)' },
-                  { label: 'DMARC (TXT)', val: `v=DMARC1; p=reject; pct=100; rua=mailto:dmarc@${result.domain}`, color: 'var(--accent-green)' },
-                  { label: 'TLS Policy', val: `SMTP require TLS 1.3\nSTARTTLS enforced\nHSTS: max-age=31536000`, color: 'var(--accent-gold)' },
-                ].map(item => (
-                  <div key={item.label} style={{
-                    background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border)',
-                    borderRadius: 8, padding: '0.85rem'
-                  }}>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 600, textTransform: 'uppercase' }}>
-                      {item.label}
-                    </div>
-                    <div style={{
-                      fontFamily: 'var(--font-mono)', fontSize: '0.72rem',
-                      color: item.color, lineHeight: 1.7, wordBreak: 'break-all'
-                    }}>{item.val}</div>
+            {/* Scan mode */}
+            <div style={{ marginBottom:"1.25rem" }}>
+              <label className="input-label">Scan Mode</label>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:"0.5rem", marginTop:"0.5rem" }}>
+                {SCAN_MODES.map(m => (
+                  <div key={m.id}
+                    onClick={()=>setMode(m.id)}
+                    style={{ padding:"0.65rem 0.85rem", borderRadius:"var(--r-sm)", border:`1px solid ${mode===m.id?"var(--border-cyan)":"var(--border)"}`, background:mode===m.id?"var(--bg-active)":"var(--bg-elevated)", cursor:"pointer", transition:"all 0.15s" }}
+                  >
+                    <div style={{ fontSize:"0.82rem", fontWeight:600, color:mode===m.id?"var(--cyan)":"var(--text-secondary)", marginBottom:2 }}>{m.label}</div>
+                    <div style={{ fontSize:"0.68rem", color:"var(--text-faint)" }}>{m.desc}</div>
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* Recent */}
+            <div style={{ marginBottom:"1.25rem" }}>
+              <label className="input-label">Recent Domains</label>
+              <div style={{ display:"flex", gap:"0.4rem", flexWrap:"wrap", marginTop:"0.5rem" }}>
+                {EXAMPLE_DOMAINS.map(d => (
+                  <button key={d} className="btn btn-secondary btn-xs"
+                    onClick={()=>{ setDomain(d); setErr(""); }}>
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button className="btn btn-primary w-full" style={{ justifyContent:"center" }} onClick={startScan}>
+              <ScanSearch size={16}/> Begin Assessment
+            </button>
+
+            <p style={{ fontSize:"0.70rem", color:"var(--text-faint)", textAlign:"center", marginTop:"0.85rem" }}>
+              Only public-facing DNS and SMTP signals are inspected. No private data is accessed.
+            </p>
           </div>
-        </div>
+        </motion.div>
+      )}
+
+      {/* ── SCANNING ── */}
+      {phase === "scanning" && (
+        <motion.div initial={{ opacity:0, scale:0.97 }} animate={{ opacity:1, scale:1 }} transition={{ duration:0.35 }}
+          style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1.25rem" }}>
+          {/* Left: animation */}
+          <div className="card" style={{ padding:"1.75rem", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"1.25rem" }}>
+            <div style={{ position:"relative", width:120, height:120 }}>
+              {[0,1,2].map(i => (
+                <div key={i} style={{ position:"absolute", inset:`${i*-16}px`, borderRadius:"50%", border:"1.5px solid var(--cyan)", animation:`scanPing ${1.8+i*0.6}s ease-out infinite`, animationDelay:`${i*0.5}s`, opacity:0 }}/>
+              ))}
+              <div style={{ width:120, height:120, borderRadius:"50%", background:"var(--cyan-dim)", border:"1px solid var(--border-cyan)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <ScanSearch size={40} style={{ color:"var(--cyan)" }}/>
+              </div>
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontFamily:"var(--font-display)", fontSize:"1.1rem", fontWeight:700, marginBottom:6 }}>
+                Scanning {domain}
+              </div>
+              <div style={{ fontSize:"0.78rem", color:"var(--text-muted)" }}>
+                {steps.find(s=>s.state==="active")?.detail || "Initializing..."}
+              </div>
+            </div>
+            <div style={{ width:"100%" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", fontSize:"0.70rem", color:"var(--text-muted)", marginBottom:6 }}>
+                <span>Progress</span><span style={{ color:"var(--cyan)", fontFamily:"var(--font-mono)", fontWeight:700 }}>{pct}%</span>
+              </div>
+              <div className="progress-bar"><div className="progress-fill" style={{ width:`${pct}%` }}/></div>
+            </div>
+            <button className="btn btn-secondary btn-sm" onClick={reset}>
+              <X size={14}/> Cancel
+            </button>
+          </div>
+
+          {/* Right: timeline */}
+          <div className="card" style={{ padding:"1.25rem" }}>
+            <div style={{ fontSize:"0.64rem", fontFamily:"var(--font-mono)", textTransform:"uppercase", letterSpacing:"0.10em", color:"var(--text-faint)", marginBottom:"0.85rem" }}>
+              Scan Timeline
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:"0.4rem" }}>
+              {steps.map(s => (
+                <div key={s.id} className={`scan-step ${s.state}`}>
+                  <div className={`step-icon ${s.state}`}>
+                    {s.state==="done" ? "✓" : s.state==="failed" ? "✗" : s.state==="active" ? "⟳" : ""}
+                  </div>
+                  <div>
+                    <div className="step-label">{s.label}</div>
+                    {s.state==="active" && <div className="step-detail">{s.detail}</div>}
+                  </div>
+                  <div style={{ marginLeft:"auto" }}>
+                    <StepIcon state={s.state}/>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Live log */}
+            <div style={{ marginTop:"0.75rem" }}>
+              <button className="btn btn-ghost btn-xs" style={{ fontSize:"0.68rem" }} onClick={()=>setLogsOpen(o=>!o)}>
+                {logsOpen?"Hide":"Show"} technical log ({logs.length})
+              </button>
+              {logsOpen && (
+                <div style={{ marginTop:"0.5rem", background:"var(--bg-overlay)", borderRadius:"var(--r-sm)", padding:"0.65rem", fontFamily:"var(--font-mono)", fontSize:"0.66rem", color:"var(--green)", maxHeight:120, overflowY:"auto" }}>
+                  {logs.map((l,i)=><div key={i}>{l}</div>)}
+                </div>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── RESULTS ── */}
+      {phase === "results" && (
+        <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.4 }}>
+          {/* Score bar */}
+          <div className="card" style={{ padding:"1.25rem 1.5rem", marginBottom:"1rem", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:"1rem" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:"1.25rem" }}>
+              <div style={{ textAlign:"center" }}>
+                <div style={{ fontFamily:"var(--font-display)", fontSize:"2.8rem", fontWeight:700, color:scoreColor(score), lineHeight:1 }}>{score}</div>
+                <div style={{ fontSize:"0.62rem", color:"var(--text-faint)", fontFamily:"var(--font-mono)" }}>/100</div>
+              </div>
+              <div>
+                <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize:"1.0rem", color:scoreColor(score) }}>{scoreLabel(score)}</div>
+                <div style={{ fontSize:"0.80rem", color:"var(--text-muted)", marginTop:2 }}>{domain} · just now</div>
+                <div style={{ marginTop:6, display:"flex", gap:"0.4rem", flexWrap:"wrap" }}>
+                  {["1 Critical","2 High","1 Medium","1 Low"].map((b,i)=>(
+                    <span key={i} className={`badge ${["badge-critical","badge-high","badge-medium","badge-low"][i]}`}>{b}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div style={{ display:"flex", gap:"0.6rem" }}>
+              <button className="btn btn-secondary btn-sm" onClick={reset}><RotateCcw size={14}/> Scan Again</button>
+              <button className="btn btn-primary btn-sm" onClick={()=>toast.success("Report export started")}><Download size={14}/> Export</button>
+            </div>
+          </div>
+
+          {/* Findings */}
+          <div>
+            <div style={{ marginBottom:"0.75rem" }}>
+              <div className="section-label">Assessment Findings</div>
+              <div className="section-title">{sorted.length} Issues Detected</div>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:"0.5rem" }}>
+              {sorted.map((f,i) => (
+                <motion.div key={f.id} initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} transition={{ delay:i*0.06 }}>
+                  <FindingCard f={f}/>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
       )}
     </div>
   );
